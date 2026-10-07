@@ -15,6 +15,7 @@ LRCX
 KLAC
 SNDK
 SKHY
+ARM
 
 # 網通／光通訊／伺服器
 ANET
