@@ -1,0 +1,54 @@
+# FCN 機會雷達觀察清單：一行一個美股代號，# 後面是註解
+# 改完存檔（Commit）後，GitHub Actions 會自動抓新資料，約 3–5 分鐘後網頁更新
+
+# 半導體
+NVDA
+AMD
+AVGO
+TSM
+MU
+MRVL
+INTC
+QCOM
+AMAT
+LRCX
+KLAC
+SNDK
+SKHY
+
+# 網通／光通訊／伺服器
+ANET
+CIEN
+COHR
+LITE
+AAOI
+FN
+SMCI
+HPE
+VRT
+
+# 軟體／雲端／資安
+MSFT
+ORCL
+NOW
+CRM
+SNOW
+MDB
+DDOG
+PLTR
+CRWD
+ZS
+OKTA
+
+# 平台
+GOOGL
+META
+AMZN
+AAPL
+TSLA
+
+# 電力／能源
+GEV
+VST
+CEG
+BE

@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="AI／科技股 FCN 連結標的研究：品質 × 波動地圖與 worst-of 組合試算。學術參考，非投資建議。">
+<title>FCN 機會雷達</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: navy masthead → FCN 條件列 → 摘要 → 個股雷達卡片網格 → 方法與風險揭露 */
+:root{
+  --bg:#F3F1EA; --surface:#FFFFFF; --sunk:#E9E5D8; --ink:#0F1B30; --muted:#5B6476; --line:#D8D2C2;
+  --navy:#0F1E3D; --navy-2:#1B2F57; --on-navy:#F2EEDF; --on-navy-muted:#A9B3C7;
+  --gold:#A67C1E; --gold-soft:#E8D7A8; --gold-ink:#7A5A10;
+  --good:#1F7A4D; --good-bg:#DDEFE4; --warn:#9A5B00; --warn-bg:#F6E7C8; --bad:#A12C2C; --bad-bg:#F4DCDC;
+  --spark:#1B2F57; --spark-fill:rgba(27,47,87,.10);
+  --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0A1222; --surface:#111C33; --sunk:#0D172B; --ink:#EDEAE0; --muted:#97A1B5; --line:#24324F;
+  --navy:#07101F; --navy-2:#15264A; --on-navy:#F2EEDF; --on-navy-muted:#9AA6BD;
+  --gold:#D9B45A; --gold-soft:#3A3220; --gold-ink:#E8C979;
+  --good:#5CC48C; --good-bg:#14301F; --warn:#E3A94A; --warn-bg:#33270F; --bad:#EE7B7B; --bad-bg:#3A1717;
+  --spark:#C9D4EA; --spark-fill:rgba(201,212,234,.10); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1222; --surface:#111C33; --sunk:#0D172B; --ink:#EDEAE0; --muted:#97A1B5; --line:#24324F;
+  --navy:#07101F; --navy-2:#15264A; --on-navy:#F2EEDF; --on-navy-muted:#9AA6BD;
+  --gold:#D9B45A; --gold-soft:#3A3220; --gold-ink:#E8C979;
+  --good:#5CC48C; --good-bg:#14301F; --warn:#E3A94A; --warn-bg:#33270F; --bad:#EE7B7B; --bad-bg:#3A1717;
+  --spark:#C9D4EA; --spark-fill:rgba(201,212,234,.10); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Masthead */
+.mast{background:var(--navy);color:var(--on-navy);padding-block:22px 26px;border-bottom:3px solid var(--gold)}
+.mast .eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.mast h1{font-family:var(--f-display);font-size:clamp(28px,5vw,40px);margin:6px 0 2px;letter-spacing:.04em;text-wrap:balance}
+.mast .sub{color:var(--on-navy-muted);margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:14px;font-size:13px;color:var(--on-navy-muted)}
+.meta b{color:var(--on-navy);font-weight:500}
+
+/* Controls */
+.controls{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;margin-top:-1px;padding-block:18px}
+@media (max-width:820px){.controls{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.panel h2{font-size:12px;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:700}
+.params{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.params{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.field input,.field select,.add input{width:100%;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+.field input{font-family:var(--f-mono)}
+.add form{display:flex;gap:8px}
+.add input{text-transform:uppercase;font-family:var(--f-mono);min-width:0}
+.btn{border:1px solid var(--navy-2);background:var(--navy-2);color:var(--on-navy);border-radius:6px;padding:7px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{filter:brightness(1.15)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#1A1306}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.hint.err{color:var(--bad)}
+.hint.ok{color:var(--good)}
+.refresh{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+
+/* Summary */
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+@media (max-width:720px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--surface);padding:12px 16px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-family:var(--f-mono);font-size:22px;margin-top:2px}
+.stat .s{font-size:12px;color:var(--muted)}
+
+/* Toolbar */
+.toolbar{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin:26px 0 12px}
+.toolbar h2{font-family:var(--f-display);font-size:22px;margin:0}
+.toolbar .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toolbar select{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--navy-2);color:var(--on-navy);border-color:var(--navy-2)}
+
+/* Cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,350px),1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card.pending{border-style:dashed}
+.c-head{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.tk{font-family:var(--f-mono);font-size:19px;font-weight:500;letter-spacing:.03em}
+.nm{font-size:12.5px;color:var(--muted)}
+.px{text-align:right}
+.px .p{font-family:var(--f-mono);font-size:19px}
+.px .d{font-size:12px;color:var(--muted)}
+.verdict{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pill{font-size:12px;border-radius:4px;padding:2px 8px;font-weight:500;white-space:nowrap}
+.pill.v1{background:var(--good-bg);color:var(--good)}
+.pill.v2{background:var(--gold-soft);color:var(--gold-ink)}
+.pill.v3{background:var(--warn-bg);color:var(--warn)}
+.pill.v4{background:var(--bad-bg);color:var(--bad)}
+.pill.flag{background:var(--sunk);color:var(--muted);font-weight:400}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.m .k{font-size:11.5px;color:var(--muted)}
+.m .v{font-family:var(--f-mono);font-size:15px}
+.m .v small{font-size:11px;color:var(--muted)}
+.ruler{position:relative;height:38px;margin-top:2px}
+.ruler .track{position:absolute;left:0;right:0;top:16px;height:6px;border-radius:3px;background:var(--sunk)}
+.ruler .zone{position:absolute;top:16px;height:6px;background:var(--bad-bg);border-radius:3px 0 0 3px}
+.ruler .range{position:absolute;top:16px;height:6px;background:var(--gold-soft)}
+.ruler .tick{position:absolute;top:10px;width:2px;height:18px;transform:translateX(-1px)}
+.ruler .tick.ki{background:var(--bad)}
+.ruler .tick.st{background:var(--warn)}
+.ruler .now{position:absolute;top:12px;width:12px;height:14px;transform:translateX(-6px);background:var(--navy-2);border-radius:2px;border:2px solid var(--surface)}
+.ruler .lab{position:absolute;top:28px;font-size:10.5px;color:var(--muted);transform:translateX(-50%);white-space:nowrap;font-family:var(--f-mono)}
+.ruler .lab.l{transform:none}.ruler .lab.r{transform:translateX(-100%)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
+.spark{width:100%;height:52px;display:block}
+.c-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.linkish{background:none;border:0;padding:0;color:var(--gold-ink);cursor:pointer;font-size:13px}
+.linkish.danger{color:var(--bad)}
+.details{border-top:1px solid var(--line);padding-top:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;font-size:13px}
+.details div{display:flex;justify-content:space-between;gap:8px}
+.details span:first-child{color:var(--muted)}
+.details .num{text-align:right}
+.qbar{height:5px;background:var(--sunk);border-radius:3px;overflow:hidden;margin-top:4px}
+.qbar i{display:block;height:100%;background:var(--gold)}
+.confirm{display:flex;gap:8px;align-items:center;font-size:13px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:28px 20px;text-align:center;color:var(--muted)}
+
+/* Method */
+.method{margin-block:34px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:820px){.method{grid-template-columns:minmax(0,1fr)}}
+.method h3{font-family:var(--f-display);font-size:17px;margin:0 0 8px}
+.method p,.method li{font-size:13.5px;color:var(--muted);max-width:68ch}
+.method ul{padding-left:18px;margin:6px 0}
+.disclose{border-left:3px solid var(--gold);padding-left:14px}
+/* Map */
+.map-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.map-layout{grid-template-columns:minmax(0,1fr)}}
+.axis-hint{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding-inline:6px}
+.map-box{width:100%}
+.map-box svg{width:100%;height:auto;display:block}
+.map-box .pt{cursor:pointer}
+.map-box .pt:focus-visible circle{stroke:var(--gold);stroke-width:3}
+.peek{border-top:1px solid var(--line);margin-top:10px;padding-top:10px;font-size:13px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 12px}
+.peek .h{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.peek .k{color:var(--muted);font-size:11.5px}
+.explain p{font-size:13.5px;margin:0 0 10px}
+.quad{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin-bottom:8px;font-size:13px}
+.quad span{color:var(--muted)}
+.quad.q-tr{border-color:var(--gold)}
+/* Basket */
+.bchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.bchip{display:inline-flex;align-items:center;gap:6px;background:var(--gold-soft);color:var(--gold-ink);border-radius:999px;padding:4px 6px 4px 12px;font-family:var(--f-mono);font-size:14px}
+.bchip button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:15px;line-height:1;padding:2px 6px}
+.bstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+@media (max-width:720px){.bstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bstats .stat .v{font-size:20px}
+.bnotes{margin:12px 0 0;padding-left:18px;font-size:13.5px}
+.bnotes li{margin-bottom:4px}
+.bnotes .w{color:var(--warn)}
+.bnotes .g{color:var(--good)}
+.corr-wrap{overflow-x:auto;margin-top:12px}
+.corr{border-collapse:collapse;font-family:var(--f-mono);font-size:12.5px}
+.corr th,.corr td{padding:5px 9px;text-align:center;border:1px solid var(--line)}
+.corr th{color:var(--muted);font-weight:500}
+.bcomp{overflow-x:auto;margin-top:12px}
+.bcomp table{border-collapse:collapse;width:100%;font-size:13px;min-width:520px}
+.bcomp th,.bcomp td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.bcomp th:first-child,.bcomp td:first-child{text-align:left}
+.bcomp th{color:var(--muted);font-weight:500;font-size:12px}
+.btn.sm{padding:3px 10px;font-size:12.5px}
+.btn.on{background:var(--gold);border-color:var(--gold);color:#1A1306}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.card:hover{border-color:var(--gold)}}
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="eyebrow">FCN Research · 學術參考 · 非投資建議</div>
+    <h1>FCN 機會雷達</h1>
+    <p class="sub">AI／科技股品質 × 市場波動觀察</p>
+    <div class="meta">
+      <span>最後資料更新：<b id="m-updated">讀取中</b></span>
+      <span>市場資料日期：<b id="m-date">—</b></span>
+      <span>Universe：<b id="m-count">—</b> 檔</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="controls" aria-label="FCN 條件與觀察清單">
+    <div class="panel">
+      <h2>FCN 條件（以進場價為 100%）</h2>
+      <div class="params">
+        <div class="field"><label for="p-ki">KI 水準 %</label><input id="p-ki" type="number" min="30" max="95" step="1" value="65"></div>
+        <div class="field"><label for="p-strike">執行價 %</label><input id="p-strike" type="number" min="40" max="100" step="1" value="85"></div>
+        <div class="field"><label for="p-tenor">天期（月）</label><input id="p-tenor" type="number" min="1" max="24" step="1" value="6"></div>
+        <div class="field"><label for="p-vol">波動基準</label>
+          <select id="p-vol"><option value="auto">隱含波動 180D（缺值用歷史）</option><option value="max">歷史：兩者取高</option><option value="hv20">歷史：近 20 日</option><option value="hv49">歷史：近 50 日</option></select></div>
+      </div>
+      <p class="hint">KI 觸及率與到期低於執行價機率為簡化模型估算（零漂移、連續觀察），僅供排序比較，不等於發行機構報價。</p>
+    </div>
+    <div class="panel add">
+      <h2>新增或移除個股</h2>
+      <p class="hint" style="margin-top:0">觀察清單存在 GitHub 的 <code>tickers.txt</code>：一行一個美股代號，存檔後約 3–5 分鐘自動抓資料並更新本頁。</p>
+      <div class="refresh">
+        <a class="btn gold" id="edit-link" href="#" target="_blank" rel="noopener">編輯觀察清單</a>
+        <a class="btn ghost" id="run-link" href="#" target="_blank" rel="noopener">手動執行更新</a>
+      </div>
+      <p class="hint" id="repo-hint"></p>
+    </div>
+  </section>
+
+  <section class="summary" aria-label="摘要">
+    <div class="stat"><div class="k">優先觀察</div><div class="v" id="s-top">—</div><div class="s" id="s-top-s">品質與波動兼具</div></div>
+    <div class="stat"><div class="k">平均年化波動</div><div class="v" id="s-vol">—</div><div class="s">依所選波動基準</div></div>
+    <div class="stat"><div class="k">天期內有財報</div><div class="v" id="s-earn">—</div><div class="s" id="s-earn-s">30 日內：—</div></div>
+    <div class="stat"><div class="k">KI 觸及率最低</div><div class="v" id="s-safe">—</div><div class="s" id="s-safe-s">—</div></div>
+  </section>
+
+  <section class="mapsec" aria-label="品質與波動地圖">
+    <div class="toolbar" style="margin-top:26px">
+      <h2>品質 × 波動地圖</h2>
+      <span class="hint" style="margin:0" id="map-count">— 個有效點位</span>
+    </div>
+    <div class="map-layout">
+      <div class="panel map-panel">
+        <div class="axis-hint"><span>← 品質低</span><span>品質高 →</span></div>
+        <div id="map" class="map-box"><div class="empty">資料載入後會顯示點位。</div></div>
+        <p class="hint">點一下點位即可加入或移出下方的 FCN 組合（最多 5 檔）。金色點為已選。</p>
+        <div id="peek" class="peek" hidden></div>
+      </div>
+      <div class="panel explain">
+        <p><b>這張圖在看什麼？</b>基本面品質 × 目前波動度，用來排出值得優先詢價的連結標的。</p>
+        <p><b>X 軸＝品質百分位</b>：品質分數在本頁所有個股中的排名，越右越好。</p>
+        <p><b>Y 軸＝波動百分位</b>：所選波動基準在本頁所有個股中的排名，越上波動越高。預設用最接近 180 天到期的價平 Put 隱含波動；沒有選擇權資料的個股改用歷史波動。</p>
+        <div class="quad q-tr"><b>右上｜優先詢價區</b><span>品質較佳、波動相對偏高。優先向發行機構確認實際票息，仍要搭配估值與報價判斷。</span></div>
+        <div class="quad q-br"><b>右下｜好公司、波動較低</b><span>品質佳，但波動低，單獨做 FCN 的票息通常不具吸引力，適合當組合中的穩定成員。</span></div>
+        <div class="quad q-tl"><b>左上｜高息但需注意風險</b><span>品質較弱、波動高。報價利息高往往是在補償公司或市場風險，高波動本身不保證高息。</span></div>
+        <div class="quad q-bl"><b>左下｜低優先度</b><span>品質較弱、波動也有限，通常不是優先選股區域。</span></div>
+        <p class="hint">百分位是相對排名：個股的波動不變，也可能因其他個股波動上升而往下移。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="basket" aria-label="FCN 組合試算">
+    <div class="toolbar">
+      <h2>FCN 組合試算（Worst-of）</h2>
+      <div class="tools">
+        <button class="btn ghost" id="b-suggest" type="button">從優先詢價區挑 3 檔</button>
+        <button class="btn ghost" id="b-clear" type="button">清空</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div id="b-chips" class="bchips"></div>
+      <div id="b-body"></div>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <h2>個股明細</h2>
+    <div class="tools">
+      <div class="chips" role="group" aria-label="篩選">
+        <button class="chip" data-f="all" aria-pressed="true">全部</button>
+        <button class="chip" data-f="top" aria-pressed="false">優先觀察</button>
+        <button class="chip" data-f="earn" aria-pressed="false">30 日內財報</button>
+      </div>
+      <label for="sort" class="hint" style="margin:0">排序</label>
+      <select id="sort">
+        <option value="fit">FCN 適配度</option>
+        <option value="quality">品質分數</option>
+        <option value="vol">波動（高→低）</option>
+        <option value="ki">KI 觸及率（低→高）</option>
+        <option value="dd">距 52 週高點</option>
+        <option value="ticker">代號</option>
+      </select>
+    </div>
+  </div>
+  <div id="grid" class="grid"><div class="empty" style="grid-column:1/-1">正在載入觀察清單…</div></div>
+
+  <section class="method">
+    <div class="panel">
+      <h3>欄位怎麼算</h3>
+      <ul>
+        <li><b>波動</b>：預設為最接近 180 天到期、最接近現價兩個履約價的 Put 隱含波動平均；歷史波動為近 20／50 個交易日對數報酬標準差 × √252。</li>
+        <li><b>KI 觸及率（估）</b>：連續觀察障礙機率 Φ((ln KI + σ²T/2) ÷ σ√T) + Φ((ln KI − σ²T/2) ÷ σ√T) ÷ KI，假設股價無預期漲跌（零漂移），用於比較個股相對風險。</li>
+        <li><b>到期低於執行價（估）</b>：Φ((ln(執行價%) + σ²T/2) ÷ σ√T)，代表可能被轉換為股票的粗略機率。</li>
+        <li><b>品質／波動百分位</b>：在本頁所有有資料個股中的相對排名（0–100），50 為中位，用來劃分四個象限。</li>
+        <li><b>組合試算</b>：以各檔歷史波動與近 50 日報酬相關係數模擬 worst-of 路徑，估算任一檔觸及 KI、以及到期依執行價轉換最差標的的機率。</li>
+        <li><b>品質分數 0–100</b>：營收成長 25、營業利益率 25、自由現金流率 20、ROE 15、負債權益比 15。</li>
+        <li><b>適配度</b>：品質 ≥ 65、波動 25%–60%、RSI &lt; 75 為「優先觀察」；品質 ≥ 50 為「可考慮」；品質 &lt; 50 或波動 &gt; 65% 為「謹慎」。</li>
+      </ul>
+    </div>
+    <div class="panel disclose">
+      <h3>風險揭露</h3>
+      <p>本頁僅供學術研究參考，不構成任何投資建議，亦非任何商品之要約、推介或報價。FCN 為結構型商品，最大損失可能為全部本金：若連結標的於觀察期間跌破 KI 且到期價低於執行價，投資人將依執行價承接股票，承擔標的後續下跌風險。商品收益受發行機構信用風險影響，提前出場可能有重大價差。</p>
+      <p>資料來源為 Yahoo Finance（透過 yfinance），由 GitHub Actions 每個交易日自動擷取，可能有延遲、缺漏或錯誤；本頁機率為簡化模型估算，不代表實際發生機率。使用前請以發行機構條件書與即時報價為準，並確認客戶風險屬性與商品適合度。</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(function(){
+  "use strict";
+  // GitHub repo（部署到 GitHub Pages 時會自動從網址推算；也可直接填 "帳號/repo"）
+  const REPO_OVERRIDE = "";
+  function repoInfo(){
+    if (REPO_OVERRIDE) return REPO_OVERRIDE;
+    const h = location.hostname, m = h.match(/^([^.]+)\.github\.io$/i);
+    if (!m) return null;
+    const seg = location.pathname.split("/").filter(Boolean)[0];
+    return m[1] + "/" + (seg && !seg.includes(".") ? seg : m[1] + ".github.io");
+  }
+  const $ = id => document.getElementById(id);
+  const state = { watch: new Map(), quotes: new Map(), meta: null, filter: "all", sort: "fit", open: new Set(), confirm: null, basket: [], peek: null, dbReady: false, db: null };
+
+  // ---------- per-viewer params (localStorage, best effort) ----------
+  const P_KEYS = ["p-ki","p-strike","p-tenor","p-vol","sort"];
+  try { const s = JSON.parse(localStorage.getItem("fcn-radar-params") || "{}"); P_KEYS.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); state.sort = $("sort").value; } catch(e) {}
+  function saveParams(){ try { const o = {}; P_KEYS.forEach(k => o[k] = $(k).value); localStorage.setItem("fcn-radar-params", JSON.stringify(o)); } catch(e) {} }
+  function params(){
+    const ki = Math.min(95, Math.max(30, +$("p-ki").value || 65)) / 100;
+    const st = Math.min(100, Math.max(40, +$("p-strike").value || 85)) / 100;
+    const tenor = Math.min(24, Math.max(1, +$("p-tenor").value || 6));
+    return { ki, st, tenor, T: tenor / 12, basis: $("p-vol").value };
+  }
+
+  // ---------- math ----------
+  function Phi(x){ // standard normal CDF (Abramowitz-Stegun 7.1.26 via erf)
+    const t = 1/(1+0.3275911*Math.abs(x)/Math.SQRT2);
+    const y = 1 - (((((1.061405429*t - 1.453152027)*t) + 1.421413741)*t - 0.284496736)*t + 0.254829592)*t*Math.exp(-x*x/2);
+    return x >= 0 ? (1+y)/2 : (1-y)/2;
+  }
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  function quality(q){
+    const g = q.revGrowth == null ? 0.4 : clamp01(q.revGrowth/50);
+    const om = q.opMargin == null ? 0.4 : clamp01(q.opMargin/50);
+    const f = q.fcfMargin == null ? 0.5 : clamp01(q.fcfMargin/40);
+    const r = q.roe == null ? 0.4 : clamp01(q.roe/40);
+    const d = q.debtEquity == null ? 0.5 : clamp01((1.5 - q.debtEquity)/1.2);
+    return Math.round(g*25 + om*25 + f*20 + r*15 + d*15);
+  }
+  function daysTo(dateStr){
+    if (!dateStr) return null;
+    const d = new Date(dateStr + "T00:00:00+08:00");
+    if (isNaN(d)) return null;
+    return Math.round((d - Date.now()) / 86400000);
+  }
+  function analyse(q, p){
+    const hvMax = Math.max(q.hv20 || 0, q.hv49 || 0);
+    const useIv = p.basis === "auto" && q.iv180 != null;
+    const sig = (useIv ? q.iv180 : p.basis === "hv20" ? q.hv20 : p.basis === "hv49" ? q.hv49 : hvMax) / 100;
+    const sT = sig * Math.sqrt(p.T);
+    const lb = Math.log(p.ki), pKI = sT > 0 ? Math.min(1, Phi((lb + sT*sT/2)/sT) + Phi((lb - sT*sT/2)/sT)/p.ki) : 0; // continuous barrier, driftless price (martingale)
+    const pBelow = sT > 0 ? Phi((Math.log(p.st) + sT*sT/2)/sT) : 0;
+    const kiSigma = sT > 0 ? -Math.log(p.ki)/sT : null;
+    const qs = quality(q);
+    const dd = q.high52 ? (q.price/q.high52 - 1)*100 : null;
+    const ed = daysTo(q.earningsDate);
+    const volPct = sig*100;
+    let verdict, vc;
+    if (qs < 50 || volPct > 65) { verdict = "謹慎"; vc = "v3"; }
+    else if (qs >= 65 && volPct >= 25 && volPct <= 60 && (q.rsi == null || q.rsi < 75)) { verdict = "優先觀察"; vc = "v1"; }
+    else { verdict = "可考慮"; vc = "v2"; }
+    if (qs < 35) { verdict = "不建議"; vc = "v4"; }
+    const flags = [];
+    if (ed != null && ed >= 0 && ed <= 30) flags.push("30 日內財報");
+    else if (ed != null && ed >= 0 && ed <= p.tenor*30.4) flags.push("天期內財報");
+    if (q.rsi != null && q.rsi >= 70) flags.push("RSI 過熱");
+    if (q.ma200 && q.price < q.ma200) flags.push("低於 200 日均線");
+    if (dd != null && dd > -5) flags.push("接近 52 週高點");
+    if (volPct < 25) flags.push("波動偏低，息率有限");
+    if (q.status === "stale") flags.push("本次更新失敗，顯示前次資料");
+    // fit score: quality matters most, vol in a useful band, penalise KI risk & earnings proximity
+    const volFit = volPct < 20 ? 0.3 : volPct <= 55 ? 1 : volPct <= 70 ? 0.6 : 0.25;
+    const fit = qs*0.55 + volFit*30 + (1 - pKI)*15 - (ed != null && ed >= 0 && ed <= 30 ? 4 : 0) - (q.rsi >= 75 ? 4 : 0);
+    return { useIv, sig, volPct, pKI, pBelow, kiSigma, qs, dd, ed, verdict, vc, flags, fit, kiPx: q.price*p.ki, stPx: q.price*p.st };
+  }
+
+  // ---------- formatting ----------
+  const f2 = x => x == null || isNaN(x) ? "—" : x.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const f1 = x => x == null || isNaN(x) ? "—" : x.toFixed(1);
+  const pct = (x,d=1) => x == null || isNaN(x) ? "—" : (x*100).toFixed(d) + "%";
+  const sgn = (x,d=1) => x == null || isNaN(x) ? "—" : (x>0?"+":"") + x.toFixed(d) + "%";
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function fmtTime(iso){
+    if (!iso) return "—";
+    const d = new Date(iso); if (isNaN(d)) return esc(iso);
+    return d.toLocaleString("zh-TW",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
+  }
+
+  function spark(closes){
+    if (!closes || closes.length < 2) return "";
+    const w = 300, h = 52, pad = 4;
+    const lo = Math.min(...closes), hi = Math.max(...closes), span = hi - lo || 1;
+    const xs = i => pad + i*(w-2*pad)/(closes.length-1), ys = v => h - pad - (v-lo)/span*(h-2*pad);
+    const pts = closes.map((v,i) => xs(i).toFixed(1)+","+ys(v).toFixed(1));
+    const last = closes.length-1;
+    return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="近 ${closes.length} 個交易日收盤走勢">
+      <line x1="${pad}" x2="${w-pad}" y1="${ys(lo).toFixed(1)}" y2="${ys(lo).toFixed(1)}" stroke="var(--line)" stroke-dasharray="2 3" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      <polygon points="${xs(0).toFixed(1)},${h-pad} ${pts.join(" ")} ${xs(last).toFixed(1)},${h-pad}" fill="var(--spark-fill)"/>
+      <polyline points="${pts.join(" ")}" fill="none" stroke="var(--spark)" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <circle cx="${xs(last).toFixed(1)}" cy="${ys(closes[last]).toFixed(1)}" r="3" fill="var(--gold)"/>
+    </svg>`;
+  }
+
+  function ruler(q, a){
+    const lo = Math.min(a.kiPx, q.low52 || a.kiPx) * 0.97, hi = Math.max(q.high52 || q.price, q.price) * 1.01;
+    const x = v => ((v - lo)/(hi - lo)*100).toFixed(2) + "%";
+    const l52 = q.low52 || q.price;
+    return `<div class="ruler" aria-hidden="true">
+      <div class="track"></div>
+      <div class="zone" style="left:0;width:${x(a.kiPx)}"></div>
+      <div class="range" style="left:${x(l52)};width:calc(${x(q.high52||q.price)} - ${x(l52)})"></div>
+      <div class="tick ki" style="left:${x(a.kiPx)}"></div>
+      <div class="tick st" style="left:${x(a.stPx)}"></div>
+      <div class="now" style="left:${x(q.price)}"></div>
+      <div class="lab l" style="left:0">KI ${f2(a.kiPx)}</div>
+      <div class="lab r" style="left:100%">高 ${f2(q.high52)}</div>
+    </div>
+    <div class="legend"><span><i style="background:var(--bad)"></i>KI</span><span><i style="background:var(--warn)"></i>執行價 ${f2(a.stPx)}</span><span><i style="background:var(--gold-soft);height:6px"></i>52 週區間</span><span><i style="background:var(--navy-2);height:6px"></i>現價</span></div>`;
+  }
+
+  function cardPending(t, w){
+    const conf = state.confirm === t;
+    const q = state.quotes.get(t);
+    const err = q && q.status === "error";
+    return `<article class="card pending">
+      <div class="c-head"><div><div class="tk">${esc(t)}</div><div class="nm">${err ? "抓取失敗" : "等待資料"}</div></div></div>
+      <p class="hint" style="margin:0">${err ? esc(q.error || "找不到這個代號的資料，請確認是否為美股代號。") : "已在 tickers.txt，等待下一次更新抓取資料。"}</p>
+      <div class="c-foot"><span class="hint" style="margin:0">${q && q.updatedAt ? "嘗試時間 " + fmtTime(q.updatedAt) : ""}</span>${removeCtl(t, conf)}</div>
+    </article>`;
+  }
+  function removeCtl(){ return ""; }
+
+
+  function card(t, q, a){
+    const open = state.open.has(t), conf = state.confirm === t;
+    const chg = q.closes && q.closes.length > 1 ? (q.closes[q.closes.length-1]/q.closes[q.closes.length-2]-1)*100 : null;
+    const ed = a.ed == null ? "未公布" : a.ed < 0 ? "已過" : `${a.ed} 天後`;
+    return `<article class="card">
+      <div class="c-head">
+        <div><div class="tk">${esc(t)}</div><div class="nm">${esc(q.name)} · ${esc(q.industry || "")}</div></div>
+        <div class="px"><div class="p">${f2(q.price)}</div><div class="d">${sgn(chg,2)} · ${esc(q.priceDate || "")}</div></div>
+      </div>
+      <div class="verdict"><span class="pill ${a.vc}">${a.verdict}</span>${a.flags.map(f => `<span class="pill flag">${f}</span>`).join("")}</div>
+      <div class="metrics">
+        <div class="m"><div class="k">${a.useIv ? "180D Put IV" : "年化歷史波動"}</div><div class="v">${f1(a.volPct)}%</div></div>
+        <div class="m"><div class="k">KI 觸及率（估）</div><div class="v">${pct(a.pKI)}</div></div>
+        <div class="m"><div class="k">到期低於執行價</div><div class="v">${pct(a.pBelow)}</div></div>
+        <div class="m"><div class="k">KI 距離</div><div class="v">${a.kiSigma == null ? "—" : a.kiSigma.toFixed(2)}<small> σ</small></div></div>
+        <div class="m"><div class="k">距 52 週高點</div><div class="v">${sgn(a.dd)}</div></div>
+        <div class="m"><div class="k">品質分數</div><div class="v">${a.qs}<small> /100</small></div><div class="qbar"><i style="width:${a.qs}%"></i></div></div>
+      </div>
+      ${ruler(q, a)}
+      ${spark(q.closes)}
+      <div class="c-foot">
+        <button class="linkish" data-act="toggle" data-t="${esc(t)}" aria-expanded="${open}">${open ? "收起基本面" : "基本面與技術面"}</button>
+        <span style="display:flex;gap:12px;align-items:center"><button class="btn sm ${state.basket.includes(t) ? "on" : "ghost"}" data-act="basket" data-t="${esc(t)}">${state.basket.includes(t) ? "已在組合 ✓" : "加入組合"}</button>${removeCtl(t, conf)}</span>
+      </div>
+      ${open ? `<div class="details">
+        <div><span>市值</span><span class="num">${esc(q.marketCap || "—")}</span></div>
+        <div><span>營收 TTM</span><span class="num">${esc(q.revenueTtm || "—")}</span></div>
+        <div><span>營收成長</span><span class="num">${sgn(q.revGrowth)}</span></div>
+        <div><span>毛利率</span><span class="num">${f1(q.grossMargin)}%</span></div>
+        <div><span>營業利益率</span><span class="num">${f1(q.opMargin)}%</span></div>
+        <div><span>自由現金流率</span><span class="num">${q.fcfMargin == null ? "—" : f1(q.fcfMargin)+"%"}</span></div>
+        <div><span>ROE</span><span class="num">${f1(q.roe)}%</span></div>
+        <div><span>負債／權益</span><span class="num">${q.debtEquity == null ? "—" : q.debtEquity.toFixed(2)}</span></div>
+        <div><span>本益比</span><span class="num">${f1(q.pe)}</span></div>
+        <div><span>預估本益比</span><span class="num">${f1(q.forwardPe)}</span></div>
+        <div><span>Beta</span><span class="num">${q.beta == null ? "—" : q.beta.toFixed(2)}</span></div>
+        <div><span>RSI(14)</span><span class="num">${f1(q.rsi)}</span></div>
+        <div><span>50／200 日均線</span><span class="num">${f2(q.ma50)}／${f2(q.ma200)}</span></div>
+        <div><span>近 20／50 日波動</span><span class="num">${f1(q.hv20)}%／${f1(q.hv49)}%</span></div>
+        <div><span>180D Put IV</span><span class="num">${q.iv180 == null ? "—" : f1(q.iv180) + "%（" + esc(q.ivExpiry || "") + "）"}</span></div>
+        <div><span>近 50 日最大回檔</span><span class="num">${f1(q.maxDd50)}%</span></div>
+        <div><span>52 週區間</span><span class="num">${f2(q.low52)}–${f2(q.high52)}</span></div>
+        <div><span>下次財報</span><span class="num">${esc(q.earningsDate || "未公布")}（${ed}）</span></div>
+        <div><span>分析師／目標價</span><span class="num">${esc(q.rating || "—")}／${f2(q.target)}</span></div>
+      </div>` : ""}
+    </article>`;
+  }
+
+  // ---------- percentiles & quadrants ----------
+  function pctRank(vals){ // average-rank percentile 0..100
+    const n = vals.length; if (n === 1) return [50];
+    const idx = vals.map((v,i) => [v,i]).sort((a,b) => a[0]-b[0]);
+    const out = new Array(n); let i = 0;
+    while (i < n){ let j = i; while (j+1 < n && idx[j+1][0] === idx[i][0]) j++;
+      const r = (i+j)/2; for (let k=i;k<=j;k++) out[idx[k][1]] = r/(n-1)*100; i = j+1; }
+    return out;
+  }
+  function quadOf(qp, vp){ return qp >= 50 ? (vp >= 50 ? "tr" : "br") : (vp >= 50 ? "tl" : "bl"); }
+  const QUAD_NAME = { tr:"優先詢價區", br:"好公司、波動較低", tl:"高息需注意風險", bl:"低優先度" };
+
+  // ---------- map ----------
+  function renderMap(ready){
+    $("map-count").textContent = ready.length + " 個有效點位";
+    if (!ready.length) { $("map").innerHTML = `<div class="empty">資料載入後會顯示點位。</div>`; return; }
+    const W = 640, H = 600, L = 58, R = 22, T = 26, B = 56;
+    const X = v => L + v/100*(W-L-R), Y = v => T + (1 - v/100)*(H-T-B);
+    let g = "";
+    // quadrant tint
+    g += `<rect x="${X(50)}" y="${Y(100)}" width="${X(100)-X(50)}" height="${Y(50)-Y(100)}" fill="var(--gold-soft)" opacity=".45"/>`;
+    g += `<rect x="${X(0)}" y="${Y(100)}" width="${X(50)-X(0)}" height="${Y(50)-Y(100)}" fill="var(--warn-bg)" opacity=".35"/>`;
+    for (let v = 0; v <= 100; v += 20) {
+      g += `<line x1="${X(v)}" x2="${X(v)}" y1="${Y(0)}" y2="${Y(100)}" stroke="var(--line)" stroke-dasharray="4 4"/>`;
+      g += `<line x1="${X(0)}" x2="${X(100)}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-dasharray="4 4"/>`;
+      g += `<text x="${X(v)}" y="${Y(0)+20}" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="var(--f-mono)">${v}</text>`;
+      g += `<text x="${X(0)-8}" y="${Y(v)+4}" text-anchor="end" font-size="13" fill="var(--muted)" font-family="var(--f-mono)">${v}</text>`;
+    }
+    g += `<line x1="${X(50)}" x2="${X(50)}" y1="${Y(0)}" y2="${Y(100)}" stroke="var(--muted)" stroke-width="1" opacity=".5"/>`;
+    g += `<line x1="${X(0)}" x2="${X(100)}" y1="${Y(50)}" y2="${Y(50)}" stroke="var(--muted)" stroke-width="1" opacity=".5"/>`;
+    g += `<line x1="${X(0)}" x2="${X(0)}" y1="${Y(0)}" y2="${Y(100)}" stroke="var(--muted)" stroke-width="1.5"/>`;
+    g += `<line x1="${X(0)}" x2="${X(100)}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--muted)" stroke-width="1.5"/>`;
+    g += `<text x="${X(98)}" y="${Y(97)}" text-anchor="end" font-size="12" fill="var(--gold-ink)" font-weight="700">優先詢價區</text>`;
+    g += `<text x="${X(2)}" y="${Y(97)}" font-size="12" fill="var(--warn)" font-weight="700">高息需注意風險</text>`;
+    g += `<text x="${X(98)}" y="${Y(3)}" text-anchor="end" font-size="12" fill="var(--muted)">好公司、波動較低</text>`;
+    g += `<text x="${X(2)}" y="${Y(3)}" font-size="12" fill="var(--muted)">低優先度</text>`;
+    g += `<text x="${(X(0)+X(100))/2}" y="${H-10}" text-anchor="middle" font-size="14" fill="var(--muted)">品質百分位</text>`;
+    g += `<text transform="translate(16 ${(Y(0)+Y(100))/2}) rotate(-90)" text-anchor="middle" font-size="14" fill="var(--muted)">波動百分位</text>`;
+    // points: unselected first, selected on top
+    const sorted = ready.slice().sort((a,b) => (state.basket.includes(a.t)) - (state.basket.includes(b.t)));
+    sorted.forEach(r => {
+      const sel = state.basket.includes(r.t), cx = X(r.qp), cy = Y(r.vp);
+      const anchor = r.qp > 92 ? "end" : r.qp < 6 ? "start" : "middle";
+      g += `<g class="pt" data-t="${esc(r.t)}" tabindex="0" role="button" aria-pressed="${sel}" aria-label="${esc(r.t)}：品質百分位 ${r.qp.toFixed(0)}，波動百分位 ${r.vp.toFixed(0)}">
+        <circle cx="${cx}" cy="${cy}" r="${sel ? 10 : 8}" fill="${sel ? "var(--gold)" : "var(--navy-2)"}" fill-opacity="${sel ? 1 : .75}" stroke="${sel ? "var(--ink)" : "var(--surface)"}" stroke-width="${sel ? 2 : 1.5}"/>
+        <text x="${cx}" y="${cy-13}" text-anchor="${anchor}" font-size="12.5" font-weight="700" fill="var(--ink)" font-family="var(--f-mono)" paint-order="stroke" stroke="var(--surface)" stroke-width="3">${esc(r.t)}</text>
+      </g>`;
+    });
+    $("map").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="品質百分位對波動百分位散佈圖">${g}</svg>`;
+    renderPeek(ready);
+  }
+  function renderPeek(ready){
+    const el = $("peek"); const r = ready.find(x => x.t === state.peek);
+    if (!r) { el.hidden = true; return; }
+    const sel = state.basket.includes(r.t);
+    el.hidden = false;
+    el.innerHTML = `<div class="h"><span><b class="num">${esc(r.t)}</b> <span class="nm">${esc(r.q.name)} · ${QUAD_NAME[r.quad]}</span></span>
+        <button class="btn sm ${sel ? "on" : "ghost"}" data-act="basket" data-t="${esc(r.t)}">${sel ? "已在組合 ✓" : "加入組合"}</button></div>
+      <div><div class="k">品質分數／百分位</div><div class="num">${r.a.qs}／${r.qp.toFixed(0)}</div></div>
+      <div><div class="k">${r.a.useIv ? "180D Put IV" : "歷史波動"}／百分位</div><div class="num">${f1(r.a.volPct)}%／${r.vp.toFixed(0)}</div></div>
+      <div><div class="k">單檔 KI 觸及率</div><div class="num">${pct(r.a.pKI)}</div></div>
+      <div><div class="k">預估本益比</div><div class="num">${f1(r.q.forwardPe)}</div></div>
+      <div><div class="k">距 52 週高點</div><div class="num">${sgn(r.a.dd)}</div></div>
+      <div><div class="k">下次財報</div><div class="num">${esc(r.q.earningsDate || "未公布")}</div></div>
+      <div><div class="k">資料日期</div><div class="num">${esc(r.q.priceDate || "—")}</div></div>
+      <div><div class="k">RSI(14)</div><div class="num">${f1(r.q.rsi)}</div></div>
+      <div><div class="k">適配度</div><div><span class="pill ${r.a.vc}">${r.a.verdict}</span></div></div>`;
+  }
+
+  // ---------- basket (worst-of Monte Carlo) ----------
+  function logRets(c){ const r = []; for (let i=1;i<c.length;i++) r.push(Math.log(c[i]/c[i-1])); return r; }
+  function corr(a, b){
+    const n = Math.min(a.length, b.length); const x = a.slice(-n), y = b.slice(-n);
+    const mx = x.reduce((s,v)=>s+v,0)/n, my = y.reduce((s,v)=>s+v,0)/n;
+    let sxy=0,sxx=0,syy=0; for (let i=0;i<n;i++){ const dx=x[i]-mx, dy=y[i]-my; sxy+=dx*dy; sxx+=dx*dx; syy+=dy*dy; }
+    return sxx && syy ? sxy/Math.sqrt(sxx*syy) : 0;
+  }
+  function cholesky(M){
+    const n = M.length;
+    for (let jitter = 0; jitter < 6; jitter++) {
+      const A = M.map((row,i) => row.map((v,j) => i===j ? v + jitter*0.02 : v*(1 - jitter*0.02)));
+      const Lm = A.map(() => new Array(n).fill(0)); let ok = true;
+      for (let i=0;i<n && ok;i++) for (let j=0;j<=i;j++){
+        let s = A[i][j]; for (let k=0;k<j;k++) s -= Lm[i][k]*Lm[j][k];
+        if (i===j){ if (s <= 1e-10) { ok = false; break; } Lm[i][j] = Math.sqrt(s); } else Lm[i][j] = s/Lm[j][j];
+      }
+      if (ok) return Lm;
+    }
+    return M.map((r,i) => r.map((_,j) => i===j ? 1 : 0));
+  }
+  function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const mcCache = new Map();
+  function simulate(rows, p){
+    const key = rows.map(r => r.t + ":" + r.a.sig.toFixed(4) + ":" + (r.q.updatedAt||"")).join("|") + `|${p.ki}|${p.st}|${p.tenor}`;
+    if (mcCache.has(key)) return mcCache.get(key);
+    const n = rows.length, rets = rows.map(r => logRets(r.q.closes || []));
+    const C = rows.map((_,i) => rows.map((_,j) => i===j ? 1 : corr(rets[i], rets[j])));
+    const Lm = cholesky(C), sig = rows.map(r => r.a.sig);
+    const steps = Math.max(5, Math.round(p.T*252)), dt = 1/252, N = 4000, rand = rng(20261007);
+    const drift = sig.map(s => -0.5*s*s*dt), vol = sig.map(s => s*Math.sqrt(dt)), lnKI = Math.log(p.ki), lnST = Math.log(p.st);
+    let kiHits = 0, convert = 0, lossSum = 0, worstSum = 0, below = 0;
+    const firstHit = new Array(n).fill(0);
+    const z = new Array(n), e = new Array(n), x = new Float64Array(n);
+    for (let path=0; path<N; path++){
+      x.fill(0); let hit = false, hitWho = -1;
+      for (let s=0; s<steps; s++){
+        for (let i=0;i<n;i+=2){ // Box-Muller pairs
+          const u1 = rand() || 1e-12, u2 = rand(), m = Math.sqrt(-2*Math.log(u1));
+          e[i] = m*Math.cos(2*Math.PI*u2); if (i+1<n) e[i+1] = m*Math.sin(2*Math.PI*u2);
+        }
+        for (let i=0;i<n;i++){ let acc = 0; for (let k=0;k<=i;k++) acc += Lm[i][k]*e[k]; z[i] = acc; }
+        for (let i=0;i<n;i++){ x[i] += drift[i] + vol[i]*z[i]; if (!hit && x[i] <= lnKI) { hit = true; hitWho = i; } }
+      }
+      let w = Infinity; for (let i=0;i<n;i++) w = Math.min(w, x[i]);
+      worstSum += Math.exp(w);
+      if (w < lnST) below++;
+      if (hit) { kiHits++; firstHit[hitWho]++; if (w < lnST) { convert++; lossSum += Math.exp(w - lnST) - 1; } }
+    }
+    const res = { C, pKI: kiHits/N, pConv: convert/N, pBelow: below/N, lossGiven: convert ? lossSum/convert : null, worstAvg: worstSum/N - 1, firstHit: firstHit.map(v => kiHits ? v/kiHits : 0), N, steps };
+    mcCache.set(key, res);
+    return res;
+  }
+  function renderBasket(ready, p){
+    const map = new Map(ready.map(r => [r.t, r]));
+    state.basket = state.basket.filter(t => state.watch.has(t));
+    const rows = state.basket.map(t => map.get(t)).filter(Boolean);
+    $("b-chips").innerHTML = state.basket.length
+      ? state.basket.map(t => `<span class="bchip">${esc(t)}<button data-act="basket" data-t="${esc(t)}" aria-label="移出 ${esc(t)}">×</button></span>`).join("")
+      : `<span class="hint" style="margin:0">尚未選股。在上方地圖點選，或在個股明細按「加入組合」，最多 5 檔。</span>`;
+    const body = $("b-body");
+    if (rows.length < 2) {
+      body.innerHTML = rows.length === 1
+        ? `<p class="hint">已選 ${esc(rows[0].t)}。再選 1 檔以上即可計算 worst-of 組合；單檔 KI 觸及率約 ${pct(rows[0].a.pKI)}。</p>`
+        : "";
+      return;
+    }
+    const m = simulate(rows, p);
+    const n = rows.length; let cs = 0, cn = 0;
+    for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){ cs += m.C[i][j]; cn++; }
+    const avgC = cs/cn;
+    const minQ = rows.reduce((a,r) => r.a.qs < a.a.qs ? r : a);
+    const maxV = rows.reduce((a,r) => r.a.volPct > a.a.volPct ? r : a);
+    const earn = rows.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= p.tenor*30.4);
+    const notes = [];
+    notes.push(`<li>組合由最弱的一檔決定結果：最可能先觸及 KI 的是 <b>${esc(rows[m.firstHit.indexOf(Math.max(...m.firstHit))].t)}</b>（佔觸及情境 ${pct(Math.max(...m.firstHit),0)}）。</li>`);
+    if (avgC < 0.35) notes.push(`<li class="w">平均相關係數 ${avgC.toFixed(2)} 偏低：票息通常較高，但任一檔大跌就會觸發 KI，風險明顯高於單檔。</li>`);
+    else if (avgC > 0.7) notes.push(`<li class="g">平均相關係數 ${avgC.toFixed(2)} 偏高：走勢接近，組合風險接近單檔，票息提升也有限。</li>`);
+    else notes.push(`<li>平均相關係數 ${avgC.toFixed(2)}，屬中等分散。</li>`);
+    const tl = rows.filter(r => r.quad === "tl");
+    if (tl.length) notes.push(`<li class="w">${tl.map(r => esc(r.t)).join("、")} 位於「高息需注意風險」象限，會拉高組合票息，也是組合中較可能先出事的部位。</li>`);
+    if (minQ.a.qs < 50) notes.push(`<li class="w">最弱品質為 ${esc(minQ.t)}（${minQ.a.qs} 分）。若被轉換為股票，客戶會承接最弱的這一檔。</li>`);
+    if (earn.length) notes.push(`<li class="w">天期內有財報：${earn.map(r => `${esc(r.t)}（${esc(r.q.earningsDate)}）`).join("、")}，財報前後波動可能放大。</li>`);
+    const dates = new Set(rows.map(r => r.q.priceDate)); if (dates.size > 1) notes.push(`<li class="w">各檔資料日期不一致（${[...dates].join("、")}），相關係數僅供參考。</li>`);
+    body.innerHTML = `
+      <div class="bstats">
+        <div class="stat"><div class="k">任一檔觸及 KI（估）</div><div class="v">${pct(m.pKI)}</div><div class="s">KI ${(p.ki*100).toFixed(0)}%，每日觀察</div></div>
+        <div class="stat"><div class="k">到期轉換股票（估）</div><div class="v">${pct(m.pConv)}</div><div class="s">觸及 KI 且最差者 &lt; 執行價 ${(p.st*100).toFixed(0)}%</div></div>
+        <div class="stat"><div class="k">轉換時平均跌幅</div><div class="v">${m.lossGiven == null ? "—" : sgn(m.lossGiven*100)}</div><div class="s">最差標的相對執行價</div></div>
+        <div class="stat"><div class="k">平均相關係數</div><div class="v">${avgC.toFixed(2)}</div><div class="s">近 ${Math.min(...rows.map(r => (r.q.closes||[]).length))-1} 日報酬</div></div>
+      </div>
+      <ul class="bnotes">${notes.join("")}</ul>
+      <div class="bcomp"><table>
+        <thead><tr><th>標的</th><th>象限</th><th>品質</th><th>年化波動</th><th>單檔 KI 觸及率</th><th>KI 價</th><th>執行價</th><th>下次財報</th></tr></thead>
+        <tbody>${rows.map(r => `<tr><td class="num"><b>${esc(r.t)}</b></td><td>${QUAD_NAME[r.quad]}</td><td class="num">${r.a.qs}</td><td class="num">${f1(r.a.volPct)}%</td><td class="num">${pct(r.a.pKI)}</td><td class="num">${f2(r.a.kiPx)}</td><td class="num">${f2(r.a.stPx)}</td><td class="num">${esc(r.q.earningsDate || "未公布")}</td></tr>`).join("")}</tbody>
+      </table></div>
+      <div class="corr-wrap"><table class="corr" aria-label="相關係數矩陣">
+        <tr><th></th>${rows.map(r => `<th>${esc(r.t)}</th>`).join("")}</tr>
+        ${rows.map((r,i) => `<tr><th>${esc(r.t)}</th>${rows.map((_,j) => { const v = m.C[i][j]; const bg = i===j ? "var(--sunk)" : `color-mix(in srgb, var(--gold) ${Math.round(Math.max(0,v)*55)}%, transparent)`; return `<td style="background:${bg}">${v.toFixed(2)}</td>`; }).join("")}</tr>`).join("")}
+      </table></div>
+      <p class="hint">以歷史波動與近 50 日相關係數做 ${m.N.toLocaleString()} 條路徑、${m.steps} 個交易日的蒙地卡羅模擬（零漂移）。實際票息與風險以發行機構報價（隱含波動、相關係數）為準。</p>`;
+  }
+  function toggleBasket(t){
+    const i = state.basket.indexOf(t);
+    if (i >= 0) state.basket.splice(i,1);
+    else { if (state.basket.length >= 5) { flashBasket("組合最多 5 檔，請先移出一檔。"); return; } state.basket.push(t); }
+    saveBasket(); render();
+  }
+  function flashBasket(msg){ $("b-chips").insertAdjacentHTML("beforeend", `<span class="hint err" style="margin:0">${esc(msg)}</span>`); }
+  function saveBasket(){ try { localStorage.setItem("fcn-radar-basket", JSON.stringify(state.basket)); } catch(e) {} }
+  try { const b = JSON.parse(localStorage.getItem("fcn-radar-basket") || "[]"); if (Array.isArray(b)) state.basket = b.slice(0,5); } catch(e) {}
+
+  // ---------- render ----------
+  function render(){
+    const p = params();
+    const tickers = [...state.watch.keys()];
+    $("m-count").textContent = state.dbReady ? tickers.length : "—";
+    const meta = state.meta || {};
+    $("m-updated").textContent = state.dbReady ? fmtTime(meta.updatedAt) : "讀取中";
+    $("m-date").textContent = meta.marketDate || "N/A";
+
+    const ready = [], pending = [];
+    tickers.forEach(t => {
+      const q = state.quotes.get(t);
+      if (q && q.status !== "error" && q.price != null) ready.push({ t, q, a: analyse(q, p) });
+      else pending.push(t);
+    });
+    const qps = pctRank(ready.map(r => r.a.qs)), vps = pctRank(ready.map(r => r.a.volPct));
+    ready.forEach((r,i) => { r.qp = qps[i]; r.vp = vps[i]; r.quad = quadOf(r.qp, r.vp); });
+    state.ready = ready;
+    renderMap(ready);
+    renderBasket(ready, p);
+
+    // summary
+    const tops = ready.filter(r => r.a.verdict === "優先觀察").sort((x,y) => y.a.fit - x.a.fit);
+    $("s-top").textContent = ready.length ? tops.length + " 檔" : "—";
+    $("s-top-s").textContent = tops.length ? tops.slice(0,3).map(r => r.t).join("、") : "品質與波動兼具";
+    $("s-vol").textContent = ready.length ? (ready.reduce((s,r) => s + r.a.volPct, 0)/ready.length).toFixed(1) + "%" : "—";
+    const inTenor = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= p.tenor*30.4);
+    const in30 = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= 30);
+    $("s-earn").textContent = ready.length ? inTenor.length + " 檔" : "—";
+    $("s-earn-s").textContent = "30 日內：" + (in30.length ? in30.map(r => r.t).join("、") : "無");
+    const safest = ready.slice().sort((x,y) => x.a.pKI - y.a.pKI)[0];
+    $("s-safe").textContent = safest ? safest.t : "—";
+    $("s-safe-s").textContent = safest ? `觸及率約 ${pct(safest.a.pKI)}` : "—";
+
+    // filter & sort
+    let rows = ready;
+    if (state.filter === "top") rows = rows.filter(r => r.a.verdict === "優先觀察");
+    if (state.filter === "earn") rows = rows.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= 30);
+    const s = state.sort;
+    const cmp = {
+      fit: (x,y) => y.a.fit - x.a.fit, quality: (x,y) => y.a.qs - x.a.qs, vol: (x,y) => y.a.volPct - x.a.volPct,
+      ki: (x,y) => x.a.pKI - y.a.pKI, dd: (x,y) => x.a.dd - y.a.dd, ticker: (x,y) => x.t.localeCompare(y.t)
+    }[s] || ((x,y) => y.a.fit - x.a.fit);
+    rows = rows.slice().sort(cmp);
+
+    let html = rows.map(r => card(r.t, r.q, r.a)).join("");
+    if (state.filter === "all") html += pending.sort().map(t => cardPending(t, state.watch.get(t))).join("");
+    if (!html) {
+      html = !state.dbReady
+        ? `<div class="empty" style="grid-column:1/-1">${state.dbErr || "正在載入觀察清單…"}</div>`
+        : tickers.length === 0
+          ? `<div class="empty" style="grid-column:1/-1">觀察清單是空的。在上方「新增個股」輸入美股代號（例如 NVDA）開始建立。</div>`
+          : `<div class="empty" style="grid-column:1/-1">沒有符合這個篩選條件的個股。</div>`;
+    }
+    $("grid").innerHTML = html;
+  }
+
+  // ---------- events ----------
+  ["p-ki","p-strike","p-tenor","p-vol"].forEach(id => $(id).addEventListener("input", () => { saveParams(); render(); }));
+  $("sort").addEventListener("change", e => { state.sort = e.target.value; saveParams(); render(); });
+  document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
+    state.filter = b.dataset.f;
+    document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    render();
+  }));
+  $("grid").addEventListener("click", async e => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const t = b.dataset.t, act = b.dataset.act;
+    if (act === "toggle") { state.open.has(t) ? state.open.delete(t) : state.open.add(t); render(); }
+    if (act === "basket") toggleBasket(t);
+    });
+  function onPoint(e){
+    const g = e.target.closest(".pt"); if (!g) return;
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    state.peek = g.dataset.t; toggleBasket(g.dataset.t);
+  }
+  $("map").addEventListener("click", onPoint);
+  $("map").addEventListener("keydown", onPoint);
+  $("peek").addEventListener("click", e => { const b = e.target.closest("[data-act=basket]"); if (b) toggleBasket(b.dataset.t); });
+  $("b-chips").addEventListener("click", e => { const b = e.target.closest("[data-act=basket]"); if (b) toggleBasket(b.dataset.t); });
+  $("b-clear").addEventListener("click", () => { state.basket = []; saveBasket(); render(); });
+  $("b-suggest").addEventListener("click", () => {
+    const ready = state.ready || [];
+    const pool = ready.filter(r => r.quad === "tr").sort((a,b) => (b.a.qs + b.vp*0.3) - (a.a.qs + a.vp*0.3));
+    if (pool.length < 2) { state.basket = []; render(); flashBasket("優先詢價區目前不足 2 檔，請手動挑選。"); return; }
+    const pick = [pool[0]];
+    const rets = new Map(pool.map(r => [r.t, logRets(r.q.closes || [])]));
+    while (pick.length < 3 && pick.length < pool.length) {
+      // prefer moderate correlation (closest to 0.55) so the basket is diversified but not fragile
+      let best = null, bestScore = Infinity;
+      pool.forEach(r => { if (pick.includes(r)) return;
+        const c = pick.reduce((s,x) => s + corr(rets.get(x.t), rets.get(r.t)), 0)/pick.length;
+        const sc = Math.abs(c - 0.55) - r.a.qs/400; if (sc < bestScore) { bestScore = sc; best = r; } });
+      if (!best) break; pick.push(best);
+    }
+    state.basket = pick.map(r => r.t); saveBasket(); render();
+    document.querySelector(".basket").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  });
+  function setMsg(id, text, kind){ const el = $(id); el.textContent = text; el.className = "hint" + (kind ? " " + kind : ""); if (id === "refresh-msg") el.style.margin = "0"; }
+  render();
+
+  // ---------- data ----------
+  (function links(){
+    const repo = repoInfo();
+    if (repo) {
+      $("edit-link").href = `https://github.com/${repo}/edit/main/tickers.txt`;
+      $("run-link").href = `https://github.com/${repo}/actions/workflows/update-data.yml`;
+      $("repo-hint").textContent = "「手動執行更新」會開啟 GitHub Actions，按 Run workflow 即可。";
+    } else {
+      ["edit-link","run-link"].forEach(id => $(id).hidden = true);
+      $("repo-hint").textContent = "在本機開啟時無法連到 GitHub；請直接編輯專案內的 tickers.txt。";
+    }
+  })();
+  Promise.all([
+    fetch("data/quotes.json", { cache: "no-cache" }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    fetch("data/meta.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null)
+  ]).then(([quotes, meta]) => {
+    state.quotes = new Map(quotes.map(q => [q.ticker, q]));
+    state.watch = new Map(quotes.map(q => [q.ticker, { ticker: q.ticker, addedAt: null }]));
+    state.meta = meta; state.dbReady = true; render();
+  }).catch(() => {
+    state.dbErr = location.protocol === "file:"
+      ? "直接用檔案開啟時瀏覽器不允許讀取資料，請透過 GitHub Pages 網址開啟。"
+      : "讀取資料失敗，請稍後重新整理頁面。";
+    render();
+  });
+})();
+</script>
+</body>
+</html>
