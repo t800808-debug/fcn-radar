@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="AI／科技股 FCN 連結標的研究：品質 × 波動地圖與 worst-of 組合試算。學術參考，非投資建議。">
+<meta name="description" content="美股／日股 FCN 連結標的研究：品質 × 波動地圖、worst-of 組合試算與正相關配對。學術參考，非投資建議。">
 <title>FCN 機會雷達</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -33,6 +33,7 @@
   --spark:#C9D4EA; --spark-fill:rgba(201,212,234,.10); color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
 .num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .wrap{max-width:1180px;margin:0 auto;padding-inline:16px}
@@ -158,7 +159,7 @@ button,input,select{font:inherit;color:inherit}
 .bchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .bchip{display:inline-flex;align-items:center;gap:6px;background:var(--gold-soft);color:var(--gold-ink);border-radius:999px;padding:4px 6px 4px 12px;font-family:var(--f-mono);font-size:14px}
 .bchip button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:15px;line-height:1;padding:2px 6px}
-.bstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.bstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 @media (max-width:720px){.bstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .bstats .stat .v{font-size:20px}
 .bnotes{margin:12px 0 0;padding-left:18px;font-size:13.5px}
@@ -177,6 +178,29 @@ button,input,select{font:inherit;color:inherit}
 .btn.sm{padding:3px 10px;font-size:12.5px}
 .btn.on{background:var(--gold);border-color:var(--gold);color:#1A1306}
 @media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.card:hover{border-color:var(--gold)}}
+/* Market switch & search */
+.mkt{display:inline-flex;margin-top:14px;border:1px solid var(--navy-2);border-radius:8px;overflow:hidden;background:rgba(255,255,255,.04)}
+.mkt button{border:0;background:transparent;color:var(--on-navy-muted);padding:7px 18px;cursor:pointer;font-weight:500;letter-spacing:.04em}
+.mkt button[aria-pressed="true"]{background:var(--gold);color:#1A1306}
+.search{position:relative;flex:1 1 220px;min-width:0;max-width:340px}
+.search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 30px 6px 10px}
+.search button{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px}
+.searchhint{grid-column:1/-1;margin:0 0 4px}
+.zh{font-size:13px;color:var(--ink);margin-left:6px;font-family:var(--f-body);letter-spacing:0;font-weight:500}
+mark{background:var(--gold-soft);color:inherit;border-radius:2px}
+.params{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:640px){.params{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Pairing */
+.pair-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.pair-head select{background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-width:100%}
+.pair-wrap{overflow-x:auto}
+.pair{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+.pair th,.pair td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.pair th:first-child,.pair td:first-child{text-align:left}
+.pair th{color:var(--muted);font-weight:500;font-size:12px}
+.cbar{display:inline-block;width:56px;height:6px;background:var(--sunk);border-radius:3px;vertical-align:middle;margin-left:6px;overflow:hidden}
+.cbar i{display:block;height:100%;background:var(--good)}
+.tag-etf{font-size:11px;border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--muted);margin-left:6px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -185,7 +209,11 @@ button,input,select{font:inherit;color:inherit}
   <div class="wrap">
     <div class="eyebrow">FCN Research · 學術參考 · 非投資建議</div>
     <h1>FCN 機會雷達</h1>
-    <p class="sub">AI／科技股品質 × 市場波動觀察</p>
+    <p class="sub" id="m-sub">美股品質 × 市場波動觀察</p>
+    <div class="mkt" role="group" aria-label="市場">
+      <button type="button" data-mkt="US" aria-pressed="true">美股 US</button>
+      <button type="button" data-mkt="JP" aria-pressed="false">日股 JP</button>
+    </div>
     <div class="meta">
       <span>最後資料更新：<b id="m-updated">讀取中</b></span>
       <span>市場資料日期：<b id="m-date">—</b></span>
@@ -201,6 +229,7 @@ button,input,select{font:inherit;color:inherit}
       <div class="params">
         <div class="field"><label for="p-ki">KI 水準 %</label><input id="p-ki" type="number" min="30" max="95" step="1" value="65"></div>
         <div class="field"><label for="p-strike">執行價 %</label><input id="p-strike" type="number" min="40" max="100" step="1" value="85"></div>
+        <div class="field"><label for="p-ko">KO 水準 %</label><input id="p-ko" type="number" min="80" max="120" step="1" value="100"></div>
         <div class="field"><label for="p-tenor">天期（月）</label><input id="p-tenor" type="number" min="1" max="24" step="1" value="6"></div>
         <div class="field"><label for="p-vol">波動基準</label>
           <select id="p-vol"><option value="auto">隱含波動 180D（缺值用歷史）</option><option value="max">歷史：兩者取高</option><option value="hv20">歷史：近 20 日</option><option value="hv49">歷史：近 50 日</option></select></div>
@@ -209,7 +238,7 @@ button,input,select{font:inherit;color:inherit}
     </div>
     <div class="panel add">
       <h2>新增或移除個股</h2>
-      <p class="hint" style="margin-top:0">觀察清單存在 GitHub 的 <code>tickers.txt</code>：一行一個美股代號，存檔後約 3–5 分鐘自動抓資料並更新本頁。</p>
+      <p class="hint" style="margin-top:0">觀察清單存在 GitHub 的 <code>tickers.txt</code>：美股一行一個代號（如 <code>PLTR</code>），日股寫 4 碼加 <code>.T</code>（如 <code>8035.T # 東京威力科創</code>，# 後面會當成中文名稱）。存檔後約 3–5 分鐘自動抓資料並更新本頁。</p>
       <div class="refresh">
         <a class="btn gold" id="edit-link" href="#" target="_blank" rel="noopener">編輯觀察清單</a>
         <a class="btn ghost" id="run-link" href="#" target="_blank" rel="noopener">手動執行更新</a>
@@ -240,7 +269,7 @@ button,input,select{font:inherit;color:inherit}
       <div class="panel explain">
         <p><b>這張圖在看什麼？</b>基本面品質 × 目前波動度，用來排出值得優先詢價的連結標的。</p>
         <p><b>X 軸＝品質百分位</b>：品質分數在本頁所有個股中的排名，越右越好。</p>
-        <p><b>Y 軸＝波動百分位</b>：所選波動基準在本頁所有個股中的排名，越上波動越高。預設用最接近 180 天到期的價平 Put 隱含波動；沒有選擇權資料的個股改用歷史波動。</p>
+        <p><b>Y 軸＝波動百分位</b>：所選波動基準在本頁所有個股中的排名，越上波動越高。預設用最接近 180 天到期的價平 Put 隱含波動；沒有選擇權資料的個股（包括日股）改用歷史波動。</p>
         <div class="quad q-tr"><b>右上｜優先詢價區</b><span>品質較佳、波動相對偏高。優先向發行機構確認實際票息，仍要搭配估值與報價判斷。</span></div>
         <div class="quad q-br"><b>右下｜好公司、波動較低</b><span>品質佳，但波動低，單獨做 FCN 的票息通常不具吸引力，適合當組合中的穩定成員。</span></div>
         <div class="quad q-tl"><b>左上｜高息但需注意風險</b><span>品質較弱、波動高。報價利息高往往是在補償公司或市場風險，高波動本身不保證高息。</span></div>
@@ -264,9 +293,25 @@ button,input,select{font:inherit;color:inherit}
     </div>
   </section>
 
+  <section class="pairsec" aria-label="正相關配對">
+    <div class="toolbar">
+      <h2>正相關配對（搭配快速 KO）</h2>
+      <span class="hint" style="margin:0">相關係數越高，兩檔越同漲同跌，月觀察日一起站上 KO 價的機會越大</span>
+    </div>
+    <div class="panel">
+      <div class="pair-head">
+        <label for="pair-anchor" class="hint" style="margin:0">主標的</label>
+        <select id="pair-anchor"></select>
+        <label class="hint" style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="pair-etf" checked> 含 ETF</label>
+      </div>
+      <div id="pair-body"><p class="hint">資料載入後會列出與主標的最正相關的個股。</p></div>
+    </div>
+  </section>
+
   <div class="toolbar">
     <h2>個股明細</h2>
     <div class="tools">
+      <div class="search"><input id="q" type="search" placeholder="搜尋代號、名稱或產業" aria-label="搜尋個股" autocomplete="off"><button type="button" id="q-clear" aria-label="清除搜尋" hidden>×</button></div>
       <div class="chips" role="group" aria-label="篩選">
         <button class="chip" data-f="all" aria-pressed="true">全部</button>
         <button class="chip" data-f="top" aria-pressed="false">優先觀察</button>
@@ -289,11 +334,13 @@ button,input,select{font:inherit;color:inherit}
     <div class="panel">
       <h3>欄位怎麼算</h3>
       <ul>
-        <li><b>波動</b>：預設為最接近 180 天到期、最接近現價兩個履約價的 Put 隱含波動平均；歷史波動為近 20／50 個交易日對數報酬標準差 × √252。</li>
+        <li><b>波動</b>：預設為最接近 180 天到期、最接近現價兩個履約價的 Put 隱含波動平均；歷史波動為近 20／50 個交易日對數報酬標準差 × √252。Yahoo 沒有日股選擇權資料，日股一律用歷史波動。</li>
         <li><b>KI 觸及率（估）</b>：連續觀察障礙機率 Φ((ln KI + σ²T/2) ÷ σ√T) + Φ((ln KI − σ²T/2) ÷ σ√T) ÷ KI，假設股價無預期漲跌（零漂移），用於比較個股相對風險。</li>
         <li><b>到期低於執行價（估）</b>：Φ((ln(執行價%) + σ²T/2) ÷ σ√T)，代表可能被轉換為股票的粗略機率。</li>
         <li><b>品質／波動百分位</b>：在本頁所有有資料個股中的相對排名（0–100），50 為中位，用來劃分四個象限。</li>
-        <li><b>組合試算</b>：以各檔歷史波動與近 50 日報酬相關係數模擬 worst-of 路徑，估算任一檔觸及 KI、以及到期依執行價轉換最差標的的機率。</li>
+        <li><b>組合試算</b>：以各檔歷史波動與近 50 日報酬相關係數模擬 worst-of 路徑。每月觀察一次，所有標的都站上 KO 價即提前出場；未 KO 時估算任一檔觸及 KI、以及到期依執行價轉換最差標的的機率。</li>
+        <li><b>正相關配對</b>：計算主標的與同市場其他個股近 50 日報酬的相關係數，由高到低排列，並模擬兩檔 worst-of 的 KO 機率與平均 KO 月份。相關越高，越接近單檔走勢，KO 較快、KI 風險較低，但票息通常也較低。</li>
+        <li><b>日股</b>：與美股同樣由 Yahoo Finance 取得（代號加 .T），價格以日圓計，已含分割調整。ETF 沒有基本面，不計品質分數，也不放進地圖。</li>
         <li><b>品質分數 0–100</b>：營收成長 25、營業利益率 25、自由現金流率 20、ROE 15、負債權益比 15。</li>
         <li><b>適配度</b>：品質 ≥ 65、波動 25%–60%、RSI &lt; 75 為「優先觀察」；品質 ≥ 50 為「可考慮」；品質 &lt; 50 或波動 &gt; 65% 為「謹慎」。</li>
       </ul>
@@ -319,17 +366,25 @@ button,input,select{font:inherit;color:inherit}
     return m[1] + "/" + (seg && !seg.includes(".") ? seg : m[1] + ".github.io");
   }
   const $ = id => document.getElementById(id);
-  const state = { watch: new Map(), quotes: new Map(), meta: null, filter: "all", sort: "fit", open: new Set(), confirm: null, basket: [], peek: null, dbReady: false, db: null };
+  const state = { watch: new Map(), quotes: new Map(), meta: null, filter: "all", sort: "fit", open: new Set(), confirm: null, basket: [], peek: null, dbReady: false, db: null, market: "US", q: "", anchor: { US: null, JP: null } };
+
+  // ---------- market helpers ----------
+  const mktOf = t => /\.T$/.test(t) ? "JP" : "US";
+  const disp = t => t.replace(/\.T$/, "");
+  const zhOf = t => { const q = state.quotes.get(t), w = state.watch.get(t); return (q && q.zhName) || (w && w.zhName) || ""; };
+  const isEtf = q => q && q.type === "ETF";
+  try { const m = localStorage.getItem("fcn-radar-market"); if (m === "JP" || m === "US") state.market = m; } catch(e) {}
 
   // ---------- per-viewer params (localStorage, best effort) ----------
-  const P_KEYS = ["p-ki","p-strike","p-tenor","p-vol","sort"];
+  const P_KEYS = ["p-ki","p-strike","p-ko","p-tenor","p-vol","sort"];
   try { const s = JSON.parse(localStorage.getItem("fcn-radar-params") || "{}"); P_KEYS.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); state.sort = $("sort").value; } catch(e) {}
   function saveParams(){ try { const o = {}; P_KEYS.forEach(k => o[k] = $(k).value); localStorage.setItem("fcn-radar-params", JSON.stringify(o)); } catch(e) {} }
   function params(){
     const ki = Math.min(95, Math.max(30, +$("p-ki").value || 65)) / 100;
     const st = Math.min(100, Math.max(40, +$("p-strike").value || 85)) / 100;
     const tenor = Math.min(24, Math.max(1, +$("p-tenor").value || 6));
-    return { ki, st, tenor, T: tenor / 12, basis: $("p-vol").value };
+    const ko = Math.min(120, Math.max(80, +$("p-ko").value || 100)) / 100;
+    return { ki, st, ko, tenor, T: tenor / 12, basis: $("p-vol").value };
   }
 
   // ---------- math ----------
@@ -361,15 +416,17 @@ button,input,select{font:inherit;color:inherit}
     const lb = Math.log(p.ki), pKI = sT > 0 ? Math.min(1, Phi((lb + sT*sT/2)/sT) + Phi((lb - sT*sT/2)/sT)/p.ki) : 0; // continuous barrier, driftless price (martingale)
     const pBelow = sT > 0 ? Phi((Math.log(p.st) + sT*sT/2)/sT) : 0;
     const kiSigma = sT > 0 ? -Math.log(p.ki)/sT : null;
-    const qs = quality(q);
+    const etf = isEtf(q);
+    const qs = etf ? null : quality(q);
     const dd = q.high52 ? (q.price/q.high52 - 1)*100 : null;
     const ed = daysTo(q.earningsDate);
     const volPct = sig*100;
     let verdict, vc;
-    if (qs < 50 || volPct > 65) { verdict = "謹慎"; vc = "v3"; }
+    if (etf) { verdict = volPct > 65 ? "ETF・謹慎" : "ETF"; vc = volPct > 65 ? "v3" : "v2"; }
+    else if (qs < 50 || volPct > 65) { verdict = "謹慎"; vc = "v3"; }
     else if (qs >= 65 && volPct >= 25 && volPct <= 60 && (q.rsi == null || q.rsi < 75)) { verdict = "優先觀察"; vc = "v1"; }
     else { verdict = "可考慮"; vc = "v2"; }
-    if (qs < 35) { verdict = "不建議"; vc = "v4"; }
+    if (!etf && qs < 35) { verdict = "不建議"; vc = "v4"; }
     const flags = [];
     if (ed != null && ed >= 0 && ed <= 30) flags.push("30 日內財報");
     else if (ed != null && ed >= 0 && ed <= p.tenor*30.4) flags.push("天期內財報");
@@ -380,16 +437,27 @@ button,input,select{font:inherit;color:inherit}
     if (q.status === "stale") flags.push("本次更新失敗，顯示前次資料");
     // fit score: quality matters most, vol in a useful band, penalise KI risk & earnings proximity
     const volFit = volPct < 20 ? 0.3 : volPct <= 55 ? 1 : volPct <= 70 ? 0.6 : 0.25;
-    const fit = qs*0.55 + volFit*30 + (1 - pKI)*15 - (ed != null && ed >= 0 && ed <= 30 ? 4 : 0) - (q.rsi >= 75 ? 4 : 0);
+    const fit = (qs == null ? 55 : qs)*0.55 + volFit*30 + (1 - pKI)*15 - (ed != null && ed >= 0 && ed <= 30 ? 4 : 0) - (q.rsi >= 75 ? 4 : 0);
     return { useIv, sig, volPct, pKI, pBelow, kiSigma, qs, dd, ed, verdict, vc, flags, fit, kiPx: q.price*p.ki, stPx: q.price*p.st };
   }
 
   // ---------- formatting ----------
-  const f2 = x => x == null || isNaN(x) ? "—" : x.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const f2 = x => x == null || isNaN(x) ? "—" : x.toLocaleString("en-US",{minimumFractionDigits:Math.abs(x) >= 1000 ? 0 : 2,maximumFractionDigits:2});
   const f1 = x => x == null || isNaN(x) ? "—" : x.toFixed(1);
   const pct = (x,d=1) => x == null || isNaN(x) ? "—" : (x*100).toFixed(d) + "%";
   const sgn = (x,d=1) => x == null || isNaN(x) ? "—" : (x>0?"+":"") + x.toFixed(d) + "%";
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function hl(s){ // escape + highlight current search term
+    const txt = String(s == null ? "" : s), q = state.q.trim();
+    if (!q) return esc(txt);
+    const i = txt.toLowerCase().indexOf(q.toLowerCase());
+    return i < 0 ? esc(txt) : esc(txt.slice(0,i)) + "<mark>" + esc(txt.slice(i, i+q.length)) + "</mark>" + esc(txt.slice(i+q.length));
+  }
+  function matches(t){
+    const q = state.q.trim().toLowerCase(); if (!q) return true;
+    const d = state.quotes.get(t) || {}, w = state.watch.get(t) || {};
+    return [disp(t), d.name, d.zhName, d.industry, w.name, w.zhName, w.industry].some(v => v && String(v).toLowerCase().includes(q));
+  }
   function fmtTime(iso){
     if (!iso) return "—";
     const d = new Date(iso); if (isNaN(d)) return esc(iso);
@@ -433,13 +501,12 @@ button,input,select{font:inherit;color:inherit}
     const q = state.quotes.get(t);
     const err = q && q.status === "error";
     return `<article class="card pending">
-      <div class="c-head"><div><div class="tk">${esc(t)}</div><div class="nm">${err ? "抓取失敗" : "等待資料"}</div></div></div>
-      <p class="hint" style="margin:0">${err ? esc(q.error || "找不到這個代號的資料，請確認是否為美股代號。") : "已在 tickers.txt，等待下一次更新抓取資料。"}</p>
+      <div class="c-head"><div><div class="tk">${hl(disp(t))}${zhOf(t) ? `<span class="zh">${hl(zhOf(t))}</span>` : ""}</div><div class="nm">${err ? "抓取失敗" : "等待資料"}${w && w.name ? " · " + hl(w.name) : ""}</div></div></div>
+      <p class="hint" style="margin:0">${err ? esc(q.error || (mktOf(t) === "JP" ? "找不到這個代號的資料，請確認是否為東證代號。" : "找不到這個代號的資料，請確認是否為美股代號。")) : "已在 tickers.txt，等待下一次更新抓取資料。"}</p>
       <div class="c-foot"><span class="hint" style="margin:0">${q && q.updatedAt ? "嘗試時間 " + fmtTime(q.updatedAt) : ""}</span>${removeCtl(t, conf)}</div>
     </article>`;
   }
   function removeCtl(){ return ""; }
-
 
   function card(t, q, a){
     const open = state.open.has(t), conf = state.confirm === t;
@@ -447,8 +514,8 @@ button,input,select{font:inherit;color:inherit}
     const ed = a.ed == null ? "未公布" : a.ed < 0 ? "已過" : `${a.ed} 天後`;
     return `<article class="card">
       <div class="c-head">
-        <div><div class="tk">${esc(t)}</div><div class="nm">${esc(q.name)} · ${esc(q.industry || "")}</div></div>
-        <div class="px"><div class="p">${f2(q.price)}</div><div class="d">${sgn(chg,2)} · ${esc(q.priceDate || "")}</div></div>
+        <div><div class="tk">${hl(disp(t))}${q.zhName ? `<span class="zh">${hl(q.zhName)}</span>` : ""}${isEtf(q) ? `<span class="tag-etf">ETF</span>` : ""}</div><div class="nm">${hl(q.name)} · ${hl(q.industry || "")}</div></div>
+        <div class="px"><div class="p">${q.currency === "JPY" ? "¥" : ""}${f2(q.price)}</div><div class="d">${sgn(chg,2)} · ${esc(q.priceDate || "")}</div></div>
       </div>
       <div class="verdict"><span class="pill ${a.vc}">${a.verdict}</span>${a.flags.map(f => `<span class="pill flag">${f}</span>`).join("")}</div>
       <div class="metrics">
@@ -457,7 +524,7 @@ button,input,select{font:inherit;color:inherit}
         <div class="m"><div class="k">到期低於執行價</div><div class="v">${pct(a.pBelow)}</div></div>
         <div class="m"><div class="k">KI 距離</div><div class="v">${a.kiSigma == null ? "—" : a.kiSigma.toFixed(2)}<small> σ</small></div></div>
         <div class="m"><div class="k">距 52 週高點</div><div class="v">${sgn(a.dd)}</div></div>
-        <div class="m"><div class="k">品質分數</div><div class="v">${a.qs}<small> /100</small></div><div class="qbar"><i style="width:${a.qs}%"></i></div></div>
+        <div class="m"><div class="k">品質分數</div>${a.qs == null ? `<div class="v"><small>ETF 不適用</small></div>` : `<div class="v">${a.qs}<small> /100</small></div><div class="qbar"><i style="width:${a.qs}%"></i></div>`}</div>
       </div>
       ${ruler(q, a)}
       ${spark(q.closes)}
@@ -479,12 +546,14 @@ button,input,select{font:inherit;color:inherit}
         <div><span>Beta</span><span class="num">${q.beta == null ? "—" : q.beta.toFixed(2)}</span></div>
         <div><span>RSI(14)</span><span class="num">${f1(q.rsi)}</span></div>
         <div><span>50／200 日均線</span><span class="num">${f2(q.ma50)}／${f2(q.ma200)}</span></div>
-        <div><span>近 20／50 日波動</span><span class="num">${f1(q.hv20)}%／${f1(q.hv49)}%</span></div>
         <div><span>180D Put IV</span><span class="num">${q.iv180 == null ? "—" : f1(q.iv180) + "%（" + esc(q.ivExpiry || "") + "）"}</span></div>
+        <div><span>近 20／50 日波動</span><span class="num">${f1(q.hv20)}%／${f1(q.hv49)}%</span></div>
         <div><span>近 50 日最大回檔</span><span class="num">${f1(q.maxDd50)}%</span></div>
         <div><span>52 週區間</span><span class="num">${f2(q.low52)}–${f2(q.high52)}</span></div>
         <div><span>下次財報</span><span class="num">${esc(q.earningsDate || "未公布")}（${ed}）</span></div>
         <div><span>分析師／目標價</span><span class="num">${esc(q.rating || "—")}／${f2(q.target)}</span></div>
+        ${q.note ? `<div style="grid-column:1/-1"><span>備註</span><span>${esc(q.note)}</span></div>` : ""}
+        <div style="grid-column:1/-1"><span>資料來源</span><span>${esc(q.source || "—")}</span></div>
       </div>` : ""}
     </article>`;
   }
@@ -532,9 +601,9 @@ button,input,select{font:inherit;color:inherit}
     sorted.forEach(r => {
       const sel = state.basket.includes(r.t), cx = X(r.qp), cy = Y(r.vp);
       const anchor = r.qp > 92 ? "end" : r.qp < 6 ? "start" : "middle";
-      g += `<g class="pt" data-t="${esc(r.t)}" tabindex="0" role="button" aria-pressed="${sel}" aria-label="${esc(r.t)}：品質百分位 ${r.qp.toFixed(0)}，波動百分位 ${r.vp.toFixed(0)}">
+      g += `<g class="pt" data-t="${esc(r.t)}" tabindex="0" role="button" aria-pressed="${sel}" aria-label="${esc(disp(r.t))}：品質百分位 ${r.qp.toFixed(0)}，波動百分位 ${r.vp.toFixed(0)}">
         <circle cx="${cx}" cy="${cy}" r="${sel ? 10 : 8}" fill="${sel ? "var(--gold)" : "var(--navy-2)"}" fill-opacity="${sel ? 1 : .75}" stroke="${sel ? "var(--ink)" : "var(--surface)"}" stroke-width="${sel ? 2 : 1.5}"/>
-        <text x="${cx}" y="${cy-13}" text-anchor="${anchor}" font-size="12.5" font-weight="700" fill="var(--ink)" font-family="var(--f-mono)" paint-order="stroke" stroke="var(--surface)" stroke-width="3">${esc(r.t)}</text>
+        <text x="${cx}" y="${cy-13}" text-anchor="${anchor}" font-size="12.5" font-weight="700" fill="var(--ink)" font-family="var(--f-mono)" paint-order="stroke" stroke="var(--surface)" stroke-width="3">${esc(disp(r.t))}</text>
       </g>`;
     });
     $("map").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="品質百分位對波動百分位散佈圖">${g}</svg>`;
@@ -545,7 +614,7 @@ button,input,select{font:inherit;color:inherit}
     if (!r) { el.hidden = true; return; }
     const sel = state.basket.includes(r.t);
     el.hidden = false;
-    el.innerHTML = `<div class="h"><span><b class="num">${esc(r.t)}</b> <span class="nm">${esc(r.q.name)} · ${QUAD_NAME[r.quad]}</span></span>
+    el.innerHTML = `<div class="h"><span><b class="num">${esc(disp(r.t))}</b> <span class="nm">${esc(r.q.zhName || r.q.name)} · ${QUAD_NAME[r.quad]}</span></span>
         <button class="btn sm ${sel ? "on" : "ghost"}" data-act="basket" data-t="${esc(r.t)}">${sel ? "已在組合 ✓" : "加入組合"}</button></div>
       <div><div class="k">品質分數／百分位</div><div class="num">${r.a.qs}／${r.qp.toFixed(0)}</div></div>
       <div><div class="k">${r.a.useIv ? "180D Put IV" : "歷史波動"}／百分位</div><div class="num">${f1(r.a.volPct)}%／${r.vp.toFixed(0)}</div></div>
@@ -581,19 +650,19 @@ button,input,select{font:inherit;color:inherit}
   }
   function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const mcCache = new Map();
-  function simulate(rows, p){
-    const key = rows.map(r => r.t + ":" + r.a.sig.toFixed(4) + ":" + (r.q.updatedAt||"")).join("|") + `|${p.ki}|${p.st}|${p.tenor}`;
+  function simulate(rows, p, N = 4000){
+    const key = rows.map(r => r.t + ":" + r.a.sig.toFixed(4) + ":" + (r.q.updatedAt||"")).join("|") + `|${p.ki}|${p.st}|${p.ko}|${p.tenor}|${N}`;
     if (mcCache.has(key)) return mcCache.get(key);
     const n = rows.length, rets = rows.map(r => logRets(r.q.closes || []));
     const C = rows.map((_,i) => rows.map((_,j) => i===j ? 1 : corr(rets[i], rets[j])));
     const Lm = cholesky(C), sig = rows.map(r => r.a.sig);
-    const steps = Math.max(5, Math.round(p.T*252)), dt = 1/252, N = 4000, rand = rng(20261007);
-    const drift = sig.map(s => -0.5*s*s*dt), vol = sig.map(s => s*Math.sqrt(dt)), lnKI = Math.log(p.ki), lnST = Math.log(p.st);
-    let kiHits = 0, convert = 0, lossSum = 0, worstSum = 0, below = 0;
+    const steps = Math.max(5, Math.round(p.T*252)), dt = 1/252, rand = rng(20261007), M = 21;
+    const drift = sig.map(s => -0.5*s*s*dt), vol = sig.map(s => s*Math.sqrt(dt)), lnKI = Math.log(p.ki), lnST = Math.log(p.st), lnKO = Math.log(p.ko);
+    let kiHits = 0, convert = 0, lossSum = 0, worstSum = 0, below = 0, koN = 0, koMonths = 0, ko3 = 0;
     const firstHit = new Array(n).fill(0);
     const z = new Array(n), e = new Array(n), x = new Float64Array(n);
     for (let path=0; path<N; path++){
-      x.fill(0); let hit = false, hitWho = -1;
+      x.fill(0); let hit = false, hitWho = -1, koed = false;
       for (let s=0; s<steps; s++){
         for (let i=0;i<n;i+=2){ // Box-Muller pairs
           const u1 = rand() || 1e-12, u2 = rand(), m = Math.sqrt(-2*Math.log(u1));
@@ -601,13 +670,19 @@ button,input,select{font:inherit;color:inherit}
         }
         for (let i=0;i<n;i++){ let acc = 0; for (let k=0;k<=i;k++) acc += Lm[i][k]*e[k]; z[i] = acc; }
         for (let i=0;i<n;i++){ x[i] += drift[i] + vol[i]*z[i]; if (!hit && x[i] <= lnKI) { hit = true; hitWho = i; } }
+        if ((s+1) % M === 0 && s+1 < steps) { // monthly KO observation (all names at/above KO)
+          let all = true; for (let i=0;i<n;i++) if (x[i] < lnKO) { all = false; break; }
+          if (all) { koed = true; const mo = (s+1)/M; koN++; koMonths += mo; if (mo <= 3) ko3++; break; }
+        }
       }
+      if (koed) { worstSum += 1; continue; }
       let w = Infinity; for (let i=0;i<n;i++) w = Math.min(w, x[i]);
+      if (w >= lnKO) { koN++; koMonths += steps/M; if (steps/M <= 3) ko3++; worstSum += 1; continue; } // final observation at maturity
       worstSum += Math.exp(w);
       if (w < lnST) below++;
       if (hit) { kiHits++; firstHit[hitWho]++; if (w < lnST) { convert++; lossSum += Math.exp(w - lnST) - 1; } }
     }
-    const res = { C, pKI: kiHits/N, pConv: convert/N, pBelow: below/N, lossGiven: convert ? lossSum/convert : null, worstAvg: worstSum/N - 1, firstHit: firstHit.map(v => kiHits ? v/kiHits : 0), N, steps };
+    const res = { C, pKI: kiHits/N, pConv: convert/N, pBelow: below/N, lossGiven: convert ? lossSum/convert : null, worstAvg: worstSum/N - 1, firstHit: firstHit.map(v => kiHits ? v/kiHits : 0), pKO: koN/N, pKO3: ko3/N, koAvgM: koN ? koMonths/koN : null, N, steps };
     mcCache.set(key, res);
     return res;
   }
@@ -616,12 +691,12 @@ button,input,select{font:inherit;color:inherit}
     state.basket = state.basket.filter(t => state.watch.has(t));
     const rows = state.basket.map(t => map.get(t)).filter(Boolean);
     $("b-chips").innerHTML = state.basket.length
-      ? state.basket.map(t => `<span class="bchip">${esc(t)}<button data-act="basket" data-t="${esc(t)}" aria-label="移出 ${esc(t)}">×</button></span>`).join("")
+      ? state.basket.map(t => `<span class="bchip">${esc(disp(t))}${zhOf(t) ? " " + esc(zhOf(t)) : ""}<button data-act="basket" data-t="${esc(t)}" aria-label="移出 ${esc(disp(t))}">×</button></span>`).join("")
       : `<span class="hint" style="margin:0">尚未選股。在上方地圖點選，或在個股明細按「加入組合」，最多 5 檔。</span>`;
     const body = $("b-body");
     if (rows.length < 2) {
       body.innerHTML = rows.length === 1
-        ? `<p class="hint">已選 ${esc(rows[0].t)}。再選 1 檔以上即可計算 worst-of 組合；單檔 KI 觸及率約 ${pct(rows[0].a.pKI)}。</p>`
+        ? `<p class="hint">已選 ${esc(disp(rows[0].t))}。再選 1 檔以上即可計算 worst-of 組合；單檔 KI 觸及率約 ${pct(rows[0].a.pKI)}。</p>`
         : "";
       return;
     }
@@ -629,18 +704,20 @@ button,input,select{font:inherit;color:inherit}
     const n = rows.length; let cs = 0, cn = 0;
     for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){ cs += m.C[i][j]; cn++; }
     const avgC = cs/cn;
-    const minQ = rows.reduce((a,r) => r.a.qs < a.a.qs ? r : a);
+    const qRows = rows.filter(r => r.a.qs != null);
+    const minQ = qRows.length ? qRows.reduce((a,r) => r.a.qs < a.a.qs ? r : a) : null;
     const maxV = rows.reduce((a,r) => r.a.volPct > a.a.volPct ? r : a);
     const earn = rows.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= p.tenor*30.4);
     const notes = [];
-    notes.push(`<li>組合由最弱的一檔決定結果：最可能先觸及 KI 的是 <b>${esc(rows[m.firstHit.indexOf(Math.max(...m.firstHit))].t)}</b>（佔觸及情境 ${pct(Math.max(...m.firstHit),0)}）。</li>`);
+    notes.push(`<li>組合由最弱的一檔決定結果：最可能先觸及 KI 的是 <b>${esc(disp(rows[m.firstHit.indexOf(Math.max(...m.firstHit))].t))}</b>（佔觸及情境 ${pct(Math.max(...m.firstHit),0)}）。</li>`);
     if (avgC < 0.35) notes.push(`<li class="w">平均相關係數 ${avgC.toFixed(2)} 偏低：票息通常較高，但任一檔大跌就會觸發 KI，風險明顯高於單檔。</li>`);
     else if (avgC > 0.7) notes.push(`<li class="g">平均相關係數 ${avgC.toFixed(2)} 偏高：走勢接近，組合風險接近單檔，票息提升也有限。</li>`);
     else notes.push(`<li>平均相關係數 ${avgC.toFixed(2)}，屬中等分散。</li>`);
     const tl = rows.filter(r => r.quad === "tl");
-    if (tl.length) notes.push(`<li class="w">${tl.map(r => esc(r.t)).join("、")} 位於「高息需注意風險」象限，會拉高組合票息，也是組合中較可能先出事的部位。</li>`);
-    if (minQ.a.qs < 50) notes.push(`<li class="w">最弱品質為 ${esc(minQ.t)}（${minQ.a.qs} 分）。若被轉換為股票，客戶會承接最弱的這一檔。</li>`);
-    if (earn.length) notes.push(`<li class="w">天期內有財報：${earn.map(r => `${esc(r.t)}（${esc(r.q.earningsDate)}）`).join("、")}，財報前後波動可能放大。</li>`);
+    if (tl.length) notes.push(`<li class="w">${tl.map(r => esc(disp(r.t))).join("、")} 位於「高息需注意風險」象限，會拉高組合票息，也是組合中較可能先出事的部位。</li>`);
+    if (avgC >= 0.6) notes.push(`<li class="g">相關性高：估計 ${pct(m.pKO)} 的情境會在天期內 KO（3 個月內 ${pct(m.pKO3)}），適合想要快速 KO 的客戶；票息通常較低。</li>`);
+    if (minQ && minQ.a.qs < 50) notes.push(`<li class="w">最弱品質為 ${esc(disp(minQ.t))}（${minQ.a.qs} 分）。若被轉換為股票，客戶會承接最弱的這一檔。</li>`);
+    if (earn.length) notes.push(`<li class="w">天期內有財報：${earn.map(r => `${esc(disp(r.t))}（${esc(r.q.earningsDate)}）`).join("、")}，財報前後波動可能放大。</li>`);
     const dates = new Set(rows.map(r => r.q.priceDate)); if (dates.size > 1) notes.push(`<li class="w">各檔資料日期不一致（${[...dates].join("、")}），相關係數僅供參考。</li>`);
     body.innerHTML = `
       <div class="bstats">
@@ -648,16 +725,19 @@ button,input,select{font:inherit;color:inherit}
         <div class="stat"><div class="k">到期轉換股票（估）</div><div class="v">${pct(m.pConv)}</div><div class="s">觸及 KI 且最差者 &lt; 執行價 ${(p.st*100).toFixed(0)}%</div></div>
         <div class="stat"><div class="k">轉換時平均跌幅</div><div class="v">${m.lossGiven == null ? "—" : sgn(m.lossGiven*100)}</div><div class="s">最差標的相對執行價</div></div>
         <div class="stat"><div class="k">平均相關係數</div><div class="v">${avgC.toFixed(2)}</div><div class="s">近 ${Math.min(...rows.map(r => (r.q.closes||[]).length))-1} 日報酬</div></div>
+        <div class="stat"><div class="k">天期內 KO（估）</div><div class="v">${pct(m.pKO)}</div><div class="s">KO ${(p.ko*100).toFixed(0)}%，每月觀察；3 個月內 ${pct(m.pKO3)}</div></div>
+        <div class="stat"><div class="k">平均 KO 月份</div><div class="v">${m.koAvgM == null ? "—" : m.koAvgM.toFixed(1) + " 月"}</div><div class="s">僅計入有 KO 的情境</div></div>
       </div>
       <ul class="bnotes">${notes.join("")}</ul>
       <div class="bcomp"><table>
         <thead><tr><th>標的</th><th>象限</th><th>品質</th><th>年化波動</th><th>單檔 KI 觸及率</th><th>KI 價</th><th>執行價</th><th>下次財報</th></tr></thead>
-        <tbody>${rows.map(r => `<tr><td class="num"><b>${esc(r.t)}</b></td><td>${QUAD_NAME[r.quad]}</td><td class="num">${r.a.qs}</td><td class="num">${f1(r.a.volPct)}%</td><td class="num">${pct(r.a.pKI)}</td><td class="num">${f2(r.a.kiPx)}</td><td class="num">${f2(r.a.stPx)}</td><td class="num">${esc(r.q.earningsDate || "未公布")}</td></tr>`).join("")}</tbody>
+        <tbody>${rows.map(r => `<tr><td class="num"><b>${esc(disp(r.t))}</b> ${esc(r.q.zhName || "")}</td><td>${r.quad ? QUAD_NAME[r.quad] : "ETF"}</td><td class="num">${r.a.qs == null ? "—" : r.a.qs}</td><td class="num">${f1(r.a.volPct)}%</td><td class="num">${pct(r.a.pKI)}</td><td class="num">${f2(r.a.kiPx)}</td><td class="num">${f2(r.a.stPx)}</td><td class="num">${esc(r.q.earningsDate || "未公布")}</td></tr>`).join("")}</tbody>
       </table></div>
       <div class="corr-wrap"><table class="corr" aria-label="相關係數矩陣">
-        <tr><th></th>${rows.map(r => `<th>${esc(r.t)}</th>`).join("")}</tr>
-        ${rows.map((r,i) => `<tr><th>${esc(r.t)}</th>${rows.map((_,j) => { const v = m.C[i][j]; const bg = i===j ? "var(--sunk)" : `color-mix(in srgb, var(--gold) ${Math.round(Math.max(0,v)*55)}%, transparent)`; return `<td style="background:${bg}">${v.toFixed(2)}</td>`; }).join("")}</tr>`).join("")}
+        <tr><th></th>${rows.map(r => `<th>${esc(disp(r.t))}</th>`).join("")}</tr>
+        ${rows.map((r,i) => `<tr><th>${esc(disp(r.t))}</th>${rows.map((_,j) => { const v = m.C[i][j]; const bg = i===j ? "var(--sunk)" : v >= 0 ? `color-mix(in srgb, var(--good) ${Math.round(v*50)}%, transparent)` : `color-mix(in srgb, var(--bad) ${Math.round(-v*50)}%, transparent)`; return `<td style="background:${bg}">${v.toFixed(2)}</td>`; }).join("")}</tr>`).join("")}
       </table></div>
+      <p class="hint">相關係數矩陣：綠色越深越正相關（同漲同跌、較易一起 KO），紅色為負相關（任一檔下跌就可能觸發 KI）。</p>
       <p class="hint">以歷史波動與近 50 日相關係數做 ${m.N.toLocaleString()} 條路徑、${m.steps} 個交易日的蒙地卡羅模擬（零漂移）。實際票息與風險以發行機構報價（隱含波動、相關係數）為準。</p>`;
   }
   function toggleBasket(t){
@@ -667,80 +747,159 @@ button,input,select{font:inherit;color:inherit}
     saveBasket(); render();
   }
   function flashBasket(msg){ $("b-chips").insertAdjacentHTML("beforeend", `<span class="hint err" style="margin:0">${esc(msg)}</span>`); }
-  function saveBasket(){ try { localStorage.setItem("fcn-radar-basket", JSON.stringify(state.basket)); } catch(e) {} }
-  try { const b = JSON.parse(localStorage.getItem("fcn-radar-basket") || "[]"); if (Array.isArray(b)) state.basket = b.slice(0,5); } catch(e) {}
+  const BKEY = () => "fcn-radar-basket-" + state.market;
+  function saveBasket(){ try { localStorage.setItem(BKEY(), JSON.stringify(state.basket)); } catch(e) {} }
+  function loadBasket(){
+    state.basket = [];
+    try {
+      let raw = localStorage.getItem(BKEY());
+      if (raw == null && state.market === "US") raw = localStorage.getItem("fcn-radar-basket"); // migrate pre-JP key
+      const b = JSON.parse(raw || "[]"); if (Array.isArray(b)) state.basket = b.filter(t => mktOf(t) === state.market).slice(0,5);
+    } catch(e) {}
+  }
+  loadBasket();
+
+  // ---------- positive-correlation pairing (fast KO) ----------
+  function renderPairs(ready, p){
+    const sel = $("pair-anchor"), body = $("pair-body");
+    if (ready.length < 2) { sel.innerHTML = ""; body.innerHTML = `<p class="hint">至少需要 2 檔有資料的標的才能比較相關性。</p>`; return; }
+    const byT = new Map(ready.map(r => [r.t, r]));
+    let anchor = state.anchor[state.market];
+    if (!byT.has(anchor)) anchor = state.basket.find(t => byT.has(t)) || ready.slice().sort((x,y) => y.a.fit - x.a.fit)[0].t;
+    state.anchor[state.market] = anchor;
+    const opts = ready.slice().sort((x,y) => x.t.localeCompare(y.t, "en", {numeric:true}))
+      .map(r => `<option value="${esc(r.t)}"${r.t === anchor ? " selected" : ""}>${esc(disp(r.t))}${r.q.zhName ? "　" + esc(r.q.zhName) : "　" + esc(r.q.name || "")}</option>`).join("");
+    if (sel.dataset.sig !== opts) { sel.innerHTML = opts; sel.dataset.sig = opts; }
+    sel.value = anchor;
+    const A = byT.get(anchor), ra = logRets(A.q.closes || []);
+    const withEtf = $("pair-etf").checked;
+    const cands = ready.filter(r => r.t !== anchor && (withEtf || !isEtf(r.q)))
+      .map(r => ({ r, c: corr(ra, logRets(r.q.closes || [])) }))
+      .filter(x => x.c > 0).sort((x,y) => y.c - x.c).slice(0, 8);
+    if (!cands.length) { body.innerHTML = `<p class="hint">目前沒有與 ${esc(disp(anchor))} 正相關的標的。</p>`; return; }
+    const solo = simulate([A], p, 1500);
+    const rowsHtml = cands.map(({r, c}) => {
+      const m = simulate([A, r], p, 1500), inB = state.basket.includes(r.t);
+      return `<tr>
+        <td><b class="num">${esc(disp(r.t))}</b> ${esc(r.q.zhName || r.q.name || "")}${isEtf(r.q) ? `<span class="tag-etf">ETF</span>` : ""}</td>
+        <td class="num">${c.toFixed(2)}<span class="cbar"><i style="width:${Math.round(c*100)}%"></i></span></td>
+        <td class="num">${f1(r.a.volPct)}%</td>
+        <td class="num">${r.a.qs == null ? "—" : r.a.qs}</td>
+        <td class="num">${pct(m.pKO)}</td>
+        <td class="num">${pct(m.pKO3)}</td>
+        <td class="num">${m.koAvgM == null ? "—" : m.koAvgM.toFixed(1)}</td>
+        <td class="num">${pct(m.pKI)}</td>
+        <td><button class="btn sm ${inB ? "on" : "ghost"}" data-act="basket" data-t="${esc(r.t)}">${inB ? "已在組合 ✓" : "加入組合"}</button></td>
+      </tr>`; }).join("");
+    body.innerHTML = `
+      <p class="hint" style="margin:0 0 8px">主標的 <b>${esc(disp(anchor))}</b> 單檔參考：天期內 KO ${pct(solo.pKO)}（3 個月內 ${pct(solo.pKO3)}），KI 觸及率 ${pct(solo.pKI)}，年化波動 ${f1(A.a.volPct)}%。</p>
+      <div class="pair-wrap"><table class="pair">
+        <thead><tr><th>配對標的</th><th>相關係數</th><th>年化波動</th><th>品質</th><th>兩檔 KO（估）</th><th>3 個月內 KO</th><th>平均 KO 月</th><th>兩檔 KI 觸及率</th><th></th></tr></thead>
+        <tbody>${rowsHtml}</tbody></table></div>
+      <p class="hint">列出與主標的近 50 日報酬相關係數最高的 ${cands.length} 檔（同市場、僅正相關）。KO／KI 為兩檔 worst-of 的蒙地卡羅估算（每月觀察、KO ${(p.ko*100).toFixed(0)}%、KI ${(p.ki*100).toFixed(0)}%、${p.tenor} 個月）。配對越正相關、波動越接近，越容易一起站上 KO 價而提前出場；但票息通常也較低。</p>`;
+  }
 
   // ---------- render ----------
   function render(){
-    const p = params();
-    const tickers = [...state.watch.keys()];
+    const p = params(), mk = state.market, JP = mk === "JP";
+    document.querySelectorAll(".mkt button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mkt === mk)));
+    $("m-sub").textContent = JP ? "日股品質 × 市場波動觀察（東證）" : "美股品質 × 市場波動觀察";
+    const all = [...state.watch.keys()];
+    const tickers = all.filter(t => mktOf(t) === mk);
     $("m-count").textContent = state.dbReady ? tickers.length : "—";
     const meta = state.meta || {};
-    $("m-updated").textContent = state.dbReady ? fmtTime(meta.updatedAt) : "讀取中";
-    $("m-date").textContent = meta.marketDate || "N/A";
+    $("m-updated").textContent = state.dbReady ? fmtTime(JP ? (meta.updatedAtJP || meta.updatedAt) : meta.updatedAt) : "讀取中";
+    $("m-date").textContent = (JP ? meta.marketDateJP : meta.marketDate) || "N/A";
 
     const ready = [], pending = [];
     tickers.forEach(t => {
       const q = state.quotes.get(t);
-      if (q && q.status !== "error" && q.price != null) ready.push({ t, q, a: analyse(q, p) });
+      if (q && q.status !== "error" && q.price != null && q.closes && q.closes.length > 2) ready.push({ t, q, a: analyse(q, p) });
       else pending.push(t);
     });
-    const qps = pctRank(ready.map(r => r.a.qs)), vps = pctRank(ready.map(r => r.a.volPct));
-    ready.forEach((r,i) => { r.qp = qps[i]; r.vp = vps[i]; r.quad = quadOf(r.qp, r.vp); });
+    const stocks = ready.filter(r => r.a.qs != null);
+    const qps = pctRank(stocks.map(r => r.a.qs)), vps = pctRank(stocks.map(r => r.a.volPct));
+    stocks.forEach((r,i) => { r.qp = qps[i]; r.vp = vps[i]; r.quad = quadOf(r.qp, r.vp); });
     state.ready = ready;
-    renderMap(ready);
+    renderMap(stocks);
+    state.basket = state.basket.filter(t => mktOf(t) === mk);
     renderBasket(ready, p);
+    renderPairs(ready, p);
 
     // summary
     const tops = ready.filter(r => r.a.verdict === "優先觀察").sort((x,y) => y.a.fit - x.a.fit);
     $("s-top").textContent = ready.length ? tops.length + " 檔" : "—";
-    $("s-top-s").textContent = tops.length ? tops.slice(0,3).map(r => r.t).join("、") : "品質與波動兼具";
+    $("s-top-s").textContent = tops.length ? tops.slice(0,3).map(r => disp(r.t)).join("、") : "品質與波動兼具";
     $("s-vol").textContent = ready.length ? (ready.reduce((s,r) => s + r.a.volPct, 0)/ready.length).toFixed(1) + "%" : "—";
     const inTenor = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= p.tenor*30.4);
     const in30 = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= 30);
     $("s-earn").textContent = ready.length ? inTenor.length + " 檔" : "—";
-    $("s-earn-s").textContent = "30 日內：" + (in30.length ? in30.map(r => r.t).join("、") : "無");
-    const safest = ready.slice().sort((x,y) => x.a.pKI - y.a.pKI)[0];
-    $("s-safe").textContent = safest ? safest.t : "—";
-    $("s-safe-s").textContent = safest ? `觸及率約 ${pct(safest.a.pKI)}` : "—";
+    $("s-earn-s").textContent = "30 日內：" + (in30.length ? in30.map(r => disp(r.t)).join("、") : "無");
+    const safest = stocks.slice().sort((x,y) => x.a.pKI - y.a.pKI)[0];
+    $("s-safe").textContent = safest ? disp(safest.t) : "—";
+    $("s-safe-s").textContent = safest ? `觸及率約 ${pct(safest.a.pKI)}（不含 ETF）` : "—";
 
-    // filter & sort
-    let rows = ready;
+    // filter, search & sort
+    let rows = ready.filter(r => matches(r.t));
     if (state.filter === "top") rows = rows.filter(r => r.a.verdict === "優先觀察");
     if (state.filter === "earn") rows = rows.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= 30);
     const s = state.sort;
+    const qv = r => r.a.qs == null ? -1 : r.a.qs;
     const cmp = {
-      fit: (x,y) => y.a.fit - x.a.fit, quality: (x,y) => y.a.qs - x.a.qs, vol: (x,y) => y.a.volPct - x.a.volPct,
-      ki: (x,y) => x.a.pKI - y.a.pKI, dd: (x,y) => x.a.dd - y.a.dd, ticker: (x,y) => x.t.localeCompare(y.t)
+      fit: (x,y) => y.a.fit - x.a.fit, quality: (x,y) => qv(y) - qv(x), vol: (x,y) => y.a.volPct - x.a.volPct,
+      ki: (x,y) => x.a.pKI - y.a.pKI, dd: (x,y) => (x.a.dd ?? 0) - (y.a.dd ?? 0), ticker: (x,y) => x.t.localeCompare(y.t, "en", {numeric:true})
     }[s] || ((x,y) => y.a.fit - x.a.fit);
     rows = rows.slice().sort(cmp);
 
-    let html = rows.map(r => card(r.t, r.q, r.a)).join("");
-    if (state.filter === "all") html += pending.sort().map(t => cardPending(t, state.watch.get(t))).join("");
-    if (!html) {
-      html = !state.dbReady
+    let html = "";
+    const qtxt = state.q.trim();
+    if (qtxt) {
+      const n = rows.length + (state.filter === "all" ? pending.filter(matches).length : 0);
+      const other = all.filter(t => mktOf(t) !== mk && matches(t));
+      html += `<p class="hint searchhint">「${esc(qtxt)}」在${JP ? "日股" : "美股"}找到 ${n} 檔${other.length ? `；${JP ? "美股" : "日股"}另有 ${other.length} 檔（${other.slice(0,4).map(t => esc(disp(t))).join("、")}${other.length > 4 ? "…" : ""}） <button class="linkish" data-act="swap">切換查看</button>` : ""}</p>`;
+    }
+    html += rows.map(r => card(r.t, r.q, r.a)).join("");
+    if (state.filter === "all") html += pending.filter(matches).sort((a,b) => a.localeCompare(b, "en", {numeric:true})).map(t => cardPending(t, state.watch.get(t))).join("");
+    if (!rows.length && !(state.filter === "all" && pending.some(matches))) {
+      html += !state.dbReady
         ? `<div class="empty" style="grid-column:1/-1">${state.dbErr || "正在載入觀察清單…"}</div>`
         : tickers.length === 0
-          ? `<div class="empty" style="grid-column:1/-1">觀察清單是空的。在上方「新增個股」輸入美股代號（例如 NVDA）開始建立。</div>`
-          : `<div class="empty" style="grid-column:1/-1">沒有符合這個篩選條件的個股。</div>`;
+          ? `<div class="empty" style="grid-column:1/-1">${JP ? "日股" : "美股"}觀察清單是空的。按「編輯觀察清單」在 tickers.txt 加入代號。</div>`
+          : `<div class="empty" style="grid-column:1/-1">沒有符合${qtxt ? "搜尋或" : "這個"}篩選條件的個股。</div>`;
     }
     $("grid").innerHTML = html;
   }
 
   // ---------- events ----------
-  ["p-ki","p-strike","p-tenor","p-vol"].forEach(id => $(id).addEventListener("input", () => { saveParams(); render(); }));
+  ["p-ki","p-strike","p-ko","p-tenor","p-vol"].forEach(id => $(id).addEventListener("input", () => { saveParams(); render(); }));
+  function setMarket(m){
+    if (m === state.market) return;
+    state.market = m; state.peek = null; state.confirm = null;
+    try { localStorage.setItem("fcn-radar-market", m); } catch(e) {}
+    loadBasket();
+    render();
+  }
+  document.querySelectorAll(".mkt button").forEach(b => b.addEventListener("click", () => setMarket(b.dataset.mkt)));
+  let qTimer = null;
+  $("q").addEventListener("input", e => { clearTimeout(qTimer); qTimer = setTimeout(() => { state.q = e.target.value; $("q-clear").hidden = !state.q; render(); }, 120); });
+  $("q").addEventListener("keydown", e => { if (e.key === "Escape") { e.target.value = ""; state.q = ""; $("q-clear").hidden = true; render(); } });
+  $("q-clear").addEventListener("click", () => { $("q").value = ""; state.q = ""; $("q-clear").hidden = true; render(); $("q").focus(); });
+  $("pair-anchor").addEventListener("change", e => { state.anchor[state.market] = e.target.value; render(); });
+  $("pair-etf").addEventListener("change", () => render());
+  $("pair-body").addEventListener("click", e => { const b = e.target.closest("[data-act=basket]"); if (b) toggleBasket(b.dataset.t); });
   $("sort").addEventListener("change", e => { state.sort = e.target.value; saveParams(); render(); });
   document.querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => {
     state.filter = b.dataset.f;
     document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
     render();
   }));
-  $("grid").addEventListener("click", async e => {
+  $("grid").addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b) return;
     const t = b.dataset.t, act = b.dataset.act;
+    if (act === "swap") { setMarket(state.market === "US" ? "JP" : "US"); return; }
     if (act === "toggle") { state.open.has(t) ? state.open.delete(t) : state.open.add(t); render(); }
     if (act === "basket") toggleBasket(t);
-    });
+  });
   function onPoint(e){
     const g = e.target.closest(".pt"); if (!g) return;
     if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
@@ -754,7 +913,7 @@ button,input,select{font:inherit;color:inherit}
   $("b-clear").addEventListener("click", () => { state.basket = []; saveBasket(); render(); });
   $("b-suggest").addEventListener("click", () => {
     const ready = state.ready || [];
-    const pool = ready.filter(r => r.quad === "tr").sort((a,b) => (b.a.qs + b.vp*0.3) - (a.a.qs + a.vp*0.3));
+    const pool = ready.filter(r => r.quad === "tr" && r.a.qs != null).sort((a,b) => (b.a.qs + b.vp*0.3) - (a.a.qs + a.vp*0.3));
     if (pool.length < 2) { state.basket = []; render(); flashBasket("優先詢價區目前不足 2 檔，請手動挑選。"); return; }
     const pick = [pool[0]];
     const rets = new Map(pool.map(r => [r.t, logRets(r.q.closes || [])]));
@@ -770,9 +929,10 @@ button,input,select{font:inherit;color:inherit}
     document.querySelector(".basket").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   });
   function setMsg(id, text, kind){ const el = $(id); el.textContent = text; el.className = "hint" + (kind ? " " + kind : ""); if (id === "refresh-msg") el.style.margin = "0"; }
+
   render();
 
-  // ---------- data ----------
+  // ---------- links & data ----------
   (function links(){
     const repo = repoInfo();
     if (repo) {
@@ -789,8 +949,10 @@ button,input,select{font:inherit;color:inherit}
     fetch("data/meta.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null)
   ]).then(([quotes, meta]) => {
     state.quotes = new Map(quotes.map(q => [q.ticker, q]));
-    state.watch = new Map(quotes.map(q => [q.ticker, { ticker: q.ticker, addedAt: null }]));
-    state.meta = meta; state.dbReady = true; render();
+    state.watch = new Map(quotes.map(q => [q.ticker, { ticker: q.ticker, zhName: q.zhName, name: q.name, industry: q.industry }]));
+    state.meta = meta; state.dbReady = true;
+    if (state.market === "JP" && !quotes.some(q => mktOf(q.ticker) === "JP")) state.market = "US";
+    render();
   }).catch(() => {
     state.dbErr = location.protocol === "file:"
       ? "直接用檔案開啟時瀏覽器不允許讀取資料，請透過 GitHub Pages 網址開啟。"
@@ -799,5 +961,7 @@ button,input,select{font:inherit;color:inherit}
   });
 })();
 </script>
+
+
 </body>
 </html>

@@ -1,6 +1,6 @@
 """FCN 機會雷達：每日資料更新腳本（由 GitHub Actions 執行）。
 
-讀取 tickers.txt，對每個代號用 yfinance 抓：
+讀取 tickers.txt（美股代號，或日股 4 碼加 .T），對每個代號用 yfinance 抓：
 - 近一年日線 → 收盤價、52 週高低、近 20/49 日年化歷史波動、近 50 日最大回檔、RSI(14)、50/200 日均線
 - 公司資料 → 名稱、產業、市值、營收、成長率、利潤率、ROE、負債權益比、本益比、Beta、分析師目標價
 - 選擇權 → 最接近 180 天到期的價平 Put 隱含波動（iv180）
@@ -8,8 +8,13 @@
 
 輸出 data/quotes.json 與 data/meta.json。單一代號失敗不影響其他代號；
 若本次抓不到、但舊資料存在，保留舊資料並標記 stale。
+
+環境變數 MARKETS=US 或 MARKETS=JP 時只更新該市場，其餘沿用上一次資料
+（GitHub Actions 依美股、日股收盤時間各排一次）。
 """
 from __future__ import annotations
+
+import os
 
 import datetime as dt
 import json
@@ -28,13 +33,33 @@ META_FILE = ROOT / "data" / "meta.json"
 TPE = dt.timezone(dt.timedelta(hours=8))
 
 
-def read_tickers() -> list[str]:
-    out = []
+def norm(t: str) -> str:
+    """'8035', '8035 JT', '8035.T' -> '8035.T'; US tickers unchanged."""
+    t = t.strip().upper().replace(" JT", "").replace(" JP", "")
+    if t.endswith(".T"):
+        return t
+    if len(t) == 4 and t[0].isdigit():
+        return t + ".T"
+    return t
+
+
+def market_of(t: str) -> str:
+    return "JP" if t.endswith(".T") else "US"
+
+
+def read_tickers() -> tuple[list[str], dict[str, str]]:
+    """Return tickers and {ticker: label}; text after # on a ticker line is its Chinese label."""
+    out, labels = [], {}
     for line in TICKERS_FILE.read_text(encoding="utf-8").splitlines():
-        t = line.split("#", 1)[0].strip().upper()
-        if t and t not in out:
+        code, _, comment = line.partition("#")
+        if not code.strip():
+            continue
+        t = norm(code)
+        if t not in out:
             out.append(t)
-    return out
+            if comment.strip():
+                labels[t] = comment.strip()
+    return out, labels
 
 
 def r(x, n=2):
@@ -136,11 +161,12 @@ def earnings_date(tk: yf.Ticker) -> str | None:
     return None
 
 
-def fetch(t: str) -> dict:
+def fetch(t: str, label: str | None = None) -> dict:
     tk = yf.Ticker(t)
+    mk = market_of(t)
     hist = tk.history(period="1y", interval="1d", auto_adjust=False)
     if hist is None or hist.empty or "Close" not in hist:
-        raise ValueError("找不到這個代號的價格資料，請確認是否為美股代號")
+        raise ValueError("找不到這個代號的價格資料，" + ("請確認是否為東證代號（4 碼加 .T）" if mk == "JP" else "請確認是否為美股代號"))
     closes_all = [float(x) for x in hist["Close"].dropna().tolist()]
     if len(closes_all) < 25:
         raise ValueError("上市時間太短，歷史資料不足")
@@ -155,12 +181,16 @@ def fetch(t: str) -> dict:
     rev = info.get("totalRevenue")
     fcf = info.get("freeCashflow")
     de = info.get("debtToEquity")  # Yahoo reports this in percent (e.g. 17.2)
-    iv, iv_exp = iv_180(tk, price)
+    iv, iv_exp = iv_180(tk, price) if mk == "US" else (None, None)  # Yahoo has no Japanese option chains
+    is_etf = (info.get("quoteType") or "").upper() in ("ETF", "MUTUALFUND")
 
-    return {
+    q = {
         "ticker": t,
+        "market": mk,
+        "currency": info.get("currency") or ("JPY" if mk == "JP" else "USD"),
+        "type": "ETF" if is_etf else "stock",
         "name": info.get("shortName") or info.get("longName") or t,
-        "industry": info.get("industry") or info.get("sector") or "",
+        "industry": info.get("industry") or info.get("sector") or (info.get("category") or ("ETF" if is_etf else "")),
         "price": r(price),
         "priceDate": last_date,
         "low52": r(min(closes_all[-252:])),
@@ -192,10 +222,16 @@ def fetch(t: str) -> dict:
         "updatedAt": dt.datetime.now(TPE).isoformat(timespec="seconds"),
         "status": "ok",
     }
+    if mk == "JP":
+        q["code"] = t[:-2]
+    if label:
+        q["zhName"] = label
+    return q
 
 
 def main() -> int:
-    tickers = read_tickers()
+    tickers, labels = read_tickers()
+    only = {m.strip().upper() for m in os.environ.get("MARKETS", "").split(",") if m.strip()}
     old = {}
     if QUOTES_FILE.exists():
         try:
@@ -205,9 +241,15 @@ def main() -> int:
 
     out, ok, failed = [], [], []
     for t in tickers:
+        if only and market_of(t) not in only and t in old:
+            q = dict(old[t])
+            if labels.get(t):
+                q["zhName"] = labels[t]
+            out.append(q)  # other market: keep last data
+            continue
         for attempt in range(3):
             try:
-                out.append(fetch(t))
+                out.append(fetch(t, labels.get(t)))
                 ok.append(t)
                 break
             except Exception as e:  # noqa: BLE001
@@ -226,13 +268,23 @@ def main() -> int:
                 failed.append(f"{t}: {msg}")
         time.sleep(0.5)
 
-    dates = [q.get("priceDate") for q in out if q.get("status") == "ok" and q.get("priceDate")]
-    market_date = max(set(dates), key=dates.count) if dates else None
+    def mode_date(mk):
+        ds = [q.get("priceDate") for q in out if q.get("status") == "ok" and q.get("priceDate") and market_of(q["ticker"]) == mk]
+        return max(set(ds), key=ds.count) if ds else None
+    old_meta = {}
+    if META_FILE.exists():
+        try:
+            old_meta = json.loads(META_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            old_meta = {}
+    now = dt.datetime.now(TPE).isoformat(timespec="seconds")
     QUOTES_FILE.parent.mkdir(parents=True, exist_ok=True)
     QUOTES_FILE.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     META_FILE.write_text(json.dumps({
-        "updatedAt": dt.datetime.now(TPE).isoformat(timespec="seconds"),
-        "marketDate": market_date,
+        "updatedAt": now if (not only or "US" in only) else old_meta.get("updatedAt", now),
+        "updatedAtJP": now if (not only or "JP" in only) else old_meta.get("updatedAtJP"),
+        "marketDate": mode_date("US"),
+        "marketDateJP": mode_date("JP"),
         "source": "Yahoo Finance (yfinance)",
         "ok": len(ok),
         "failed": failed,
