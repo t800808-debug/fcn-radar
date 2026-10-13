@@ -126,8 +126,26 @@ def max_drawdown(closes: list[float]) -> float | None:
     return round(mdd * 100, 1)
 
 
+def atm_put_iv(tk: yf.Ticker, exp: str, spot: float) -> float | None:
+    """Mean implied vol (decimal) of the two put strikes closest to spot."""
+    try:
+        puts = tk.option_chain(exp).puts
+    except Exception:
+        return None
+    puts = puts[(puts["impliedVolatility"] > 0.01) & (puts["impliedVolatility"] < 5)]
+    if puts.empty:
+        return None
+    puts = puts.assign(dist=(puts["strike"] - spot).abs()).sort_values("dist").head(2)
+    return float(puts["impliedVolatility"].mean())
+
+
 def iv_180(tk: yf.Ticker, spot: float) -> tuple[float | None, str | None]:
-    """ATM put implied vol at the listed expiry closest to 180 calendar days."""
+    """Constant-maturity 180-day ATM put implied vol.
+
+    Interpolates total variance (sigma^2 * T) between the listed expiries just
+    before and just after 180 calendar days; if only one side exists, uses that
+    expiry as is. Returns (iv %, description of the expiries used).
+    """
     try:
         expiries = tk.options
     except Exception:
@@ -135,20 +153,24 @@ def iv_180(tk: yf.Ticker, spot: float) -> tuple[float | None, str | None]:
     if not expiries:
         return None, None
     today = dt.date.today()
-    target = today + dt.timedelta(days=180)
-    exp = min(expiries, key=lambda e: abs((dt.date.fromisoformat(e) - target).days))
-    days = (dt.date.fromisoformat(exp) - today).days
-    if days < 60:  # only short-dated options listed; not comparable to a 6-month FCN
-        return None, exp
-    try:
-        puts = tk.option_chain(exp).puts
-    except Exception:
-        return None, exp
-    puts = puts[(puts["impliedVolatility"] > 0.01) & (puts["impliedVolatility"] < 5)]
-    if puts.empty:
-        return None, exp
-    puts = puts.assign(dist=(puts["strike"] - spot).abs()).sort_values("dist").head(2)
-    return round(float(puts["impliedVolatility"].mean()) * 100, 1), exp
+    days = {e: (dt.date.fromisoformat(e) - today).days for e in expiries}
+    before = [e for e in expiries if 60 <= days[e] <= 180]  # <60 days is not comparable to a 6-month FCN
+    after = [e for e in expiries if days[e] >= 180]
+    lo = max(before, key=days.get) if before else None
+    hi = min(after, key=days.get) if after else None
+    if lo == hi:
+        hi = None
+    iv_lo = atm_put_iv(tk, lo, spot) if lo else None
+    iv_hi = atm_put_iv(tk, hi, spot) if hi else None
+    if iv_lo is not None and iv_hi is not None:
+        t1, t2 = days[lo], days[hi]
+        w = iv_lo ** 2 * t1 + (iv_hi ** 2 * t2 - iv_lo ** 2 * t1) * (180 - t1) / (t2 - t1)
+        if w > 0:
+            return round(math.sqrt(w / 180) * 100, 1), f"{t1}/{t2} 天內插"
+    for e, iv in ((hi, iv_hi), (lo, iv_lo)):
+        if iv is not None:
+            return round(iv * 100, 1), e
+    return None, hi or lo
 
 
 def earnings_date(tk: yf.Ticker) -> str | None:
