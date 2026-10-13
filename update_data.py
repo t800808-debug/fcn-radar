@@ -35,6 +35,7 @@ META_FILE = ROOT / "data" / "meta.json"
 TPE = dt.timezone(dt.timedelta(hours=8))
 # Below this an implied vol is a bad quote (Yahoo zeroes bid/ask between midnight ET and the open).
 MIN_IV = 0.05
+RATE = 0.04  # risk-free rate used to back out implied vol from option prices
 # Exchange time zone and local close time; a daily bar for today before this is still intraday.
 SESSIONS = {"US": (ZoneInfo("America/New_York"), dt.time(16, 15)), "JP": (ZoneInfo("Asia/Tokyo"), dt.time(15, 45))}
 
@@ -128,18 +129,47 @@ def max_drawdown(closes: list[float]) -> float | None:
     return round(mdd * 100, 1)
 
 
-def atm_put_iv(tk: yf.Ticker, exp: str, spot: float) -> float | None:
-    """Mean implied vol (decimal) of the two put strikes closest to spot."""
+def bs_put(spot: float, k: float, t: float, vol: float, rate: float = RATE) -> float:
+    if vol <= 0 or t <= 0:
+        return max(k * math.exp(-rate * t) - spot, 0.0)
+    d1 = (math.log(spot / k) + (rate + vol * vol / 2) * t) / (vol * math.sqrt(t))
+    d2 = d1 - vol * math.sqrt(t)
+    n = lambda x: 0.5 * (1 + math.erf(x / math.sqrt(2)))
+    return k * math.exp(-rate * t) * n(-d2) - spot * n(-d1)
+
+
+def implied_vol(price: float, spot: float, k: float, t: float) -> float | None:
+    """Black-Scholes put implied vol by bisection; None if the price is outside no-arbitrage bounds."""
+    lo, hi = 0.01, 5.0
+    if not (bs_put(spot, k, t, lo) < price < bs_put(spot, k, t, hi)):
+        return None
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        if bs_put(spot, k, t, mid) < price:
+            lo = mid
+        else:
+            hi = mid
+    return (lo + hi) / 2
+
+
+def atm_put_iv(tk: yf.Ticker, exp: str, spot: float, days: int) -> float | None:
+    """Mean implied vol (decimal) of the two put strikes closest to spot, from the bid/ask midpoint.
+
+    Yahoo's own impliedVolatility column comes from stale last prices and is unreliable,
+    and bid/ask are zero between midnight ET and the open, so those quotes are skipped.
+    """
     try:
         puts = tk.option_chain(exp).puts
     except Exception:
         return None
-    puts = puts[(puts["bid"] > 0) & (puts["ask"] > 0)
-                & (puts["impliedVolatility"] >= MIN_IV) & (puts["impliedVolatility"] < 5)]
+    puts = puts[(puts["bid"] > 0) & (puts["ask"] >= puts["bid"])]
+    puts = puts[(puts["ask"] - puts["bid"]) <= 0.5 * (puts["ask"] + puts["bid"]) / 2 + 0.05]  # drop very wide quotes
     if puts.empty:
         return None
     puts = puts.assign(dist=(puts["strike"] - spot).abs()).sort_values("dist").head(2)
-    return float(puts["impliedVolatility"].mean())
+    ivs = [implied_vol((b + a) / 2, spot, k, days / 365) for k, b, a in zip(puts["strike"], puts["bid"], puts["ask"])]
+    ivs = [v for v in ivs if v is not None and MIN_IV <= v < 5]
+    return sum(ivs) / len(ivs) if ivs else None
 
 
 def iv_180(tk: yf.Ticker, spot: float) -> tuple[float | None, str | None]:
@@ -163,8 +193,8 @@ def iv_180(tk: yf.Ticker, spot: float) -> tuple[float | None, str | None]:
     hi = min(after, key=days.get) if after else None
     if lo == hi:
         hi = None
-    iv_lo = atm_put_iv(tk, lo, spot) if lo else None
-    iv_hi = atm_put_iv(tk, hi, spot) if hi else None
+    iv_lo = atm_put_iv(tk, lo, spot, days[lo]) if lo else None
+    iv_hi = atm_put_iv(tk, hi, spot, days[hi]) if hi else None
     if iv_lo is not None and iv_hi is not None:
         t1, t2 = days[lo], days[hi]
         w = iv_lo ** 2 * t1 + (iv_hi ** 2 * t2 - iv_lo ** 2 * t1) * (180 - t1) / (t2 - t1)
@@ -215,7 +245,8 @@ def fetch(t: str, label: str | None = None) -> dict:
     rev = info.get("totalRevenue")
     fcf = info.get("freeCashflow")
     de = info.get("debtToEquity")  # Yahoo reports this in percent (e.g. 17.2)
-    iv, iv_exp = iv_180(tk, price) if mk == "US" else (None, None)  # Yahoo has no Japanese option chains
+    spot = r(info.get("regularMarketPrice")) or price  # option quotes are live, so use the live price
+    iv, iv_exp = iv_180(tk, spot) if mk == "US" else (None, None)  # Yahoo has no Japanese option chains
     is_etf = (info.get("quoteType") or "").upper() in ("ETF", "MUTUALFUND")
 
     q = {
@@ -253,6 +284,7 @@ def fetch(t: str, label: str | None = None) -> dict:
         "iv180": iv,
         "ivExpiry": iv_exp,
         "ivDate": last_date if iv is not None else None,
+        "ivMethod": "mid" if iv is not None else None,  # computed from bid/ask midpoint
         "source": "Yahoo Finance (yfinance)",
         "updatedAt": dt.datetime.now(TPE).isoformat(timespec="seconds"),
         "status": "ok",
@@ -286,9 +318,9 @@ def main() -> int:
             try:
                 q = fetch(t, labels.get(t))
                 prev = old.get(t, {})
-                if q["market"] == "US" and q["iv180"] is None and (prev.get("iv180") or 0) >= MIN_IV * 100:
+                if q["market"] == "US" and q["iv180"] is None and prev.get("iv180") and prev.get("ivMethod") == "mid":
                     # no usable option quotes this run: keep the last valid IV
-                    q.update(iv180=prev["iv180"], ivExpiry=prev.get("ivExpiry"), ivDate=prev.get("ivDate") or prev.get("priceDate"))
+                    q.update(iv180=prev["iv180"], ivExpiry=prev.get("ivExpiry"), ivDate=prev.get("ivDate"), ivMethod="mid")
                 out.append(q)
                 ok.append(t)
                 break
