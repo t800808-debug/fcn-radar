@@ -546,7 +546,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
         <div><span>Beta</span><span class="num">${q.beta == null ? "—" : q.beta.toFixed(2)}</span></div>
         <div><span>RSI(14)</span><span class="num">${f1(q.rsi)}</span></div>
         <div><span>50／200 日均線</span><span class="num">${f2(q.ma50)}／${f2(q.ma200)}</span></div>
-        <div><span>180D Put IV</span><span class="num">${q.iv180 == null ? "—" : f1(q.iv180) + "%（" + esc(q.ivExpiry || "") + "）"}</span></div>
+        <div><span>180D Put IV</span><span class="num">${q.iv180 == null ? "—" : f1(q.iv180) + "%（" + esc(q.ivExpiry || "") + (q.ivDate && q.ivDate !== q.priceDate ? "，" + esc(q.ivDate) + " 資料" : "") + "）"}</span></div>
         <div><span>近 20／50 日波動</span><span class="num">${f1(q.hv20)}%／${f1(q.hv49)}%</span></div>
         <div><span>近 50 日最大回檔</span><span class="num">${f1(q.maxDd50)}%</span></div>
         <div><span>52 週區間</span><span class="num">${f2(q.low52)}–${f2(q.high52)}</span></div>
