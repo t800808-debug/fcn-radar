@@ -10,7 +10,8 @@
 若本次抓不到、但舊資料存在，保留舊資料並標記 stale。
 
 環境變數 MARKETS=US 或 MARKETS=JP 時只更新該市場，其餘沿用上一次資料
-（GitHub Actions 依美股、日股收盤時間各排一次）。
+（手動測試用；GitHub Actions 每天台北 08:00 兩個市場一起更新）。
+今天盤中（交易所尚未收盤）的日線會被略過，只採用已收盤的交易日。
 """
 from __future__ import annotations
 
@@ -22,6 +23,7 @@ import math
 import sys
 import time
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import yfinance as yf
@@ -31,6 +33,8 @@ TICKERS_FILE = ROOT / "tickers.txt"
 QUOTES_FILE = ROOT / "data" / "quotes.json"
 META_FILE = ROOT / "data" / "meta.json"
 TPE = dt.timezone(dt.timedelta(hours=8))
+# Exchange time zone and local close time; a daily bar for today before this is still intraday.
+SESSIONS = {"US": (ZoneInfo("America/New_York"), dt.time(16, 15)), "JP": (ZoneInfo("Asia/Tokyo"), dt.time(15, 45))}
 
 
 def norm(t: str) -> str:
@@ -167,12 +171,17 @@ def fetch(t: str, label: str | None = None) -> dict:
     hist = tk.history(period="1y", interval="1d", auto_adjust=False)
     if hist is None or hist.empty or "Close" not in hist:
         raise ValueError("找不到這個代號的價格資料，" + ("請確認是否為東證代號（4 碼加 .T）" if mk == "JP" else "請確認是否為美股代號"))
+    hist = hist.dropna(subset=["Close"])
+    tz, close_at = SESSIONS[mk]
+    now_local = dt.datetime.now(tz)
+    if len(hist) and hist.index[-1].date() == now_local.date() and now_local.time() < close_at:
+        hist = hist.iloc[:-1]  # market still open: keep only completed sessions
     closes_all = [float(x) for x in hist["Close"].dropna().tolist()]
     if len(closes_all) < 25:
         raise ValueError("上市時間太短，歷史資料不足")
     price = closes_all[-1]
     closes = closes_all[-50:]
-    last_date = hist["Close"].dropna().index[-1].date().isoformat()
+    last_date = hist.index[-1].date().isoformat()
 
     try:
         info = tk.info or {}
