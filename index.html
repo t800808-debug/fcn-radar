@@ -75,6 +75,7 @@ button,input,select{font:inherit;color:inherit}
 @media (max-width:720px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .stat{background:var(--surface);padding:12px 16px}
 .stat .k{font-size:12px;color:var(--muted)}
+.stat-link{cursor:pointer}.stat-link:hover .k,.stat-link:focus-visible .k{color:var(--ink);text-decoration:underline}
 .stat .v{font-family:var(--f-mono);font-size:22px;margin-top:2px}
 .stat .s{font-size:12px;color:var(--muted)}
 
@@ -248,7 +249,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
   </section>
 
   <section class="summary" aria-label="摘要">
-    <div class="stat"><div class="k">優先觀察</div><div class="v" id="s-top">—</div><div class="s" id="s-top-s">品質與波動兼具</div></div>
+    <div class="stat stat-link" id="s-top-card" role="button" tabindex="0" title="點擊篩選優先觀察個股"><div class="k">優先觀察 →</div><div class="v" id="s-top">—</div><div class="s" id="s-top-s">品質與波動兼具</div></div>
     <div class="stat"><div class="k">平均年化波動</div><div class="v" id="s-vol">—</div><div class="s">依所選波動基準</div></div>
     <div class="stat"><div class="k">天期內有財報</div><div class="v" id="s-earn">—</div><div class="s" id="s-earn-s">30 日內：—</div></div>
     <div class="stat"><div class="k">KI 觸及率最低</div><div class="v" id="s-safe">—</div><div class="s" id="s-safe-s">—</div></div>
@@ -830,7 +831,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     // summary
     const tops = ready.filter(r => r.a.verdict === "優先觀察").sort((x,y) => y.a.fit - x.a.fit);
     $("s-top").textContent = ready.length ? tops.length + " 檔" : "—";
-    $("s-top-s").textContent = tops.length ? tops.slice(0,3).map(r => disp(r.t)).join("、") : "品質與波動兼具";
+    $("s-top-s").textContent = tops.length ? tops.slice(0,8).map(r => disp(r.t)).join("、") + (tops.length > 8 ? " 等" : "") : "品質與波動兼具";
     $("s-vol").textContent = ready.length ? (ready.reduce((s,r) => s + r.a.volPct, 0)/ready.length).toFixed(1) + "%" : "—";
     const inTenor = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= p.tenor*30.4);
     const in30 = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= 30);
@@ -894,6 +895,12 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     document.querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
     render();
   }));
+  const showTops = () => {
+    document.querySelector('.chip[data-f="top"]').click();
+    $("grid").scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  $("s-top-card").addEventListener("click", showTops);
+  $("s-top-card").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); showTops(); } });
   $("grid").addEventListener("click", e => {
     const b = e.target.closest("[data-act]"); if (!b) return;
     const t = b.dataset.t, act = b.dataset.act;
