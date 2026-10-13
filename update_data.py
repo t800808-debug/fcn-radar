@@ -1,7 +1,7 @@
 """FCN 機會雷達：每日資料更新腳本（由 GitHub Actions 執行）。
 
 讀取 tickers.txt（美股代號，或日股 4 碼加 .T），對每個代號用 yfinance 抓：
-- 近一年日線 → 收盤價、52 週高低、近 20/49 日年化歷史波動、近 50 日最大回檔、RSI(14)、50/200 日均線
+- 近一年日線 → 收盤價、52 週高低、近 20/49/120 日年化歷史波動、近 50 日最大回檔、RSI(14)、50/200 日均線
 - 公司資料 → 名稱、產業、市值、營收、成長率、利潤率、ROE、負債權益比、本益比、Beta、分析師目標價
 - 選擇權 → 最接近 180 天到期的價平 Put 隱含波動（iv180）
 - 財報日
@@ -256,6 +256,7 @@ def fetch(t: str, label: str | None = None) -> dict:
         "closes": [r(x) for x in closes],
         "hv20": hv(closes, 20),
         "hv49": hv(closes, len(closes) - 1),
+        "hv120": hv(closes_all, 120),  # ~6 months, matches typical FCN tenor
         "maxDd50": max_drawdown(closes),
         "iv180": iv,
         "ivExpiry": iv_exp,

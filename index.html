@@ -232,7 +232,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
         <div class="field"><label for="p-ko">KO 水準 %</label><input id="p-ko" type="number" min="80" max="120" step="1" value="100"></div>
         <div class="field"><label for="p-tenor">天期（月）</label><input id="p-tenor" type="number" min="1" max="24" step="1" value="6"></div>
         <div class="field"><label for="p-vol">波動基準</label>
-          <select id="p-vol"><option value="auto">隱含波動 180D（缺值用歷史）</option><option value="max">歷史：兩者取高</option><option value="hv20">歷史：近 20 日</option><option value="hv49">歷史：近 50 日</option></select></div>
+          <select id="p-vol"><option value="auto">隱含波動 180D（缺值用 120 日歷史）</option><option value="hv120">歷史：近 120 日（約 6 個月）</option><option value="max">歷史：20／50 日取高</option><option value="hv20">歷史：近 20 日</option><option value="hv49">歷史：近 50 日</option></select></div>
       </div>
       <p class="hint">KI 觸及率與到期低於執行價機率為簡化模型估算（零漂移、連續觀察），僅供排序比較，不等於發行機構報價。</p>
     </div>
@@ -269,7 +269,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
       <div class="panel explain">
         <p><b>這張圖在看什麼？</b>基本面品質 × 目前波動度，用來排出值得優先詢價的連結標的。</p>
         <p><b>X 軸＝品質百分位</b>：品質分數在本頁所有個股中的排名，越右越好。</p>
-        <p><b>Y 軸＝波動百分位</b>：所選波動基準在本頁所有個股中的排名，越上波動越高。預設用 180 天價平 Put 隱含波動（前後兩個到期日依時間內插）；沒有選擇權資料的個股（包括日股）改用歷史波動。</p>
+        <p><b>Y 軸＝波動百分位</b>：所選波動基準在本頁所有個股中的排名，越上波動越高。預設用 180 天價平 Put 隱含波動（前後兩個到期日依時間內插）；沒有選擇權資料的個股（包括日股）改用近 120 日歷史波動。</p>
         <div class="quad q-tr"><b>右上｜優先詢價區</b><span>品質較佳、波動相對偏高。優先向發行機構確認實際票息，仍要搭配估值與報價判斷。</span></div>
         <div class="quad q-br"><b>右下｜好公司、波動較低</b><span>品質佳，但波動低，單獨做 FCN 的票息通常不具吸引力，適合當組合中的穩定成員。</span></div>
         <div class="quad q-tl"><b>左上｜高息但需注意風險</b><span>品質較弱、波動高。報價利息高往往是在補償公司或市場風險，高波動本身不保證高息。</span></div>
@@ -334,7 +334,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     <div class="panel">
       <h3>欄位怎麼算</h3>
       <ul>
-        <li><b>波動</b>：預設為 180 天 Put 隱含波動：取 180 天前後兩個到期日、最接近現價兩個履約價的 Put 隱含波動平均，以總變異數依時間內插到 180 天；歷史波動為近 20／50 個交易日對數報酬標準差 × √252。Yahoo 沒有日股選擇權資料，日股一律用歷史波動。</li>
+        <li><b>波動</b>：預設為 180 天 Put 隱含波動：取 180 天前後兩個到期日、最接近現價兩個履約價的 Put 隱含波動平均，以總變異數依時間內插到 180 天；歷史波動為近 20／50／120 個交易日對數報酬標準差 × √252；120 日約 6 個月，與 FCN 常見天期相近，是沒有隱含波動時的預設。Yahoo 沒有日股選擇權資料，日股一律用歷史波動。</li>
         <li><b>KI 觸及率（估）</b>：連續觀察障礙機率 Φ((ln KI + σ²T/2) ÷ σ√T) + Φ((ln KI − σ²T/2) ÷ σ√T) ÷ KI，假設股價無預期漲跌（零漂移），用於比較個股相對風險。</li>
         <li><b>到期低於執行價（估）</b>：Φ((ln(執行價%) + σ²T/2) ÷ σ√T)，代表可能被轉換為股票的粗略機率。</li>
         <li><b>品質／波動百分位</b>：在本頁所有有資料個股中的相對排名（0–100），50 為中位，用來劃分四個象限。</li>
@@ -411,7 +411,8 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
   function analyse(q, p){
     const hvMax = Math.max(q.hv20 || 0, q.hv49 || 0);
     const useIv = p.basis === "auto" && q.iv180 != null;
-    const sig = (useIv ? q.iv180 : p.basis === "hv20" ? q.hv20 : p.basis === "hv49" ? q.hv49 : hvMax) / 100;
+    const hvLong = q.hv120 || hvMax; // older data without hv120 falls back to the 20/50-day max
+    const sig = (useIv ? q.iv180 : p.basis === "hv20" ? q.hv20 : p.basis === "hv49" ? q.hv49 : p.basis === "max" ? hvMax : hvLong) / 100;
     const sT = sig * Math.sqrt(p.T);
     const lb = Math.log(p.ki), pKI = sT > 0 ? Math.min(1, Phi((lb + sT*sT/2)/sT) + Phi((lb - sT*sT/2)/sT)/p.ki) : 0; // continuous barrier, driftless price (martingale)
     const pBelow = sT > 0 ? Phi((Math.log(p.st) + sT*sT/2)/sT) : 0;
@@ -547,7 +548,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
         <div><span>RSI(14)</span><span class="num">${f1(q.rsi)}</span></div>
         <div><span>50／200 日均線</span><span class="num">${f2(q.ma50)}／${f2(q.ma200)}</span></div>
         <div><span>180D Put IV</span><span class="num">${q.iv180 == null ? "—" : f1(q.iv180) + "%（" + esc(q.ivExpiry || "") + (q.ivDate && q.ivDate !== q.priceDate ? "，" + esc(q.ivDate) + " 資料" : "") + "）"}</span></div>
-        <div><span>近 20／50 日波動</span><span class="num">${f1(q.hv20)}%／${f1(q.hv49)}%</span></div>
+        <div><span>近 20／50／120 日波動</span><span class="num">${f1(q.hv20)}%／${f1(q.hv49)}%／${q.hv120 == null ? "—" : f1(q.hv120) + "%"}</span></div>
         <div><span>近 50 日最大回檔</span><span class="num">${f1(q.maxDd50)}%</span></div>
         <div><span>52 週區間</span><span class="num">${f2(q.low52)}–${f2(q.high52)}</span></div>
         <div><span>下次財報</span><span class="num">${esc(q.earningsDate || "未公布")}（${ed}）</span></div>
