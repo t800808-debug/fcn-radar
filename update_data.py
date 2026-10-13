@@ -33,6 +33,8 @@ TICKERS_FILE = ROOT / "tickers.txt"
 QUOTES_FILE = ROOT / "data" / "quotes.json"
 META_FILE = ROOT / "data" / "meta.json"
 TPE = dt.timezone(dt.timedelta(hours=8))
+# Below this an implied vol is a bad quote (Yahoo zeroes bid/ask between midnight ET and the open).
+MIN_IV = 0.05
 # Exchange time zone and local close time; a daily bar for today before this is still intraday.
 SESSIONS = {"US": (ZoneInfo("America/New_York"), dt.time(16, 15)), "JP": (ZoneInfo("Asia/Tokyo"), dt.time(15, 45))}
 
@@ -132,7 +134,8 @@ def atm_put_iv(tk: yf.Ticker, exp: str, spot: float) -> float | None:
         puts = tk.option_chain(exp).puts
     except Exception:
         return None
-    puts = puts[(puts["impliedVolatility"] > 0.01) & (puts["impliedVolatility"] < 5)]
+    puts = puts[(puts["bid"] > 0) & (puts["ask"] > 0)
+                & (puts["impliedVolatility"] >= MIN_IV) & (puts["impliedVolatility"] < 5)]
     if puts.empty:
         return None
     puts = puts.assign(dist=(puts["strike"] - spot).abs()).sort_values("dist").head(2)
@@ -249,6 +252,7 @@ def fetch(t: str, label: str | None = None) -> dict:
         "maxDd50": max_drawdown(closes),
         "iv180": iv,
         "ivExpiry": iv_exp,
+        "ivDate": last_date if iv is not None else None,
         "source": "Yahoo Finance (yfinance)",
         "updatedAt": dt.datetime.now(TPE).isoformat(timespec="seconds"),
         "status": "ok",
@@ -280,7 +284,12 @@ def main() -> int:
             continue
         for attempt in range(3):
             try:
-                out.append(fetch(t, labels.get(t)))
+                q = fetch(t, labels.get(t))
+                prev = old.get(t, {})
+                if q["market"] == "US" and q["iv180"] is None and (prev.get("iv180") or 0) >= MIN_IV * 100:
+                    # no usable option quotes this run: keep the last valid IV
+                    q.update(iv180=prev["iv180"], ivExpiry=prev.get("ivExpiry"), ivDate=prev.get("ivDate") or prev.get("priceDate"))
+                out.append(q)
                 ok.append(t)
                 break
             except Exception as e:  # noqa: BLE001
