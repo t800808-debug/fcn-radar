@@ -2,8 +2,9 @@ name: 更新 FCN 資料
 
 on:
   schedule:
-    # 每天台北時間 08:00（UTC 00:00）更新美股與日股；GitHub 排程可能延遲數十分鐘
-    - cron: "0 0 * * *"
+    # 每天台北時間 07:40（UTC 23:40）更新美股與日股。GitHub 整點排程常延遲 30–60 分鐘甚至跳過，
+    # 提早並避開整點，讓資料大約在 08:00 前後更新完成
+    - cron: "40 23 * * *"
   workflow_dispatch: {}
   push:
     branches: [main]
