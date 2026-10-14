@@ -57,5 +57,6 @@ jobs:
             echo "資料沒有變化"
           else
             git commit -m "資料更新 $(TZ=Asia/Taipei date '+%Y-%m-%d %H:%M')"
-            git push origin "HEAD:$BRANCH"
+            # GitHub 偶爾回傳 500，重試幾次
+            for i in 1 2 3 4; do git push origin "HEAD:$BRANCH" && break; [ $i = 4 ] && exit 1; sleep $((i * 10)); done
           fi
