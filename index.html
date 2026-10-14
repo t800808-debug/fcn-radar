@@ -234,6 +234,8 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
         <div class="field"><label for="p-tenor">天期（月）</label><input id="p-tenor" type="number" min="1" max="24" step="1" value="6"></div>
         <div class="field"><label for="p-vol">波動基準</label>
           <select id="p-vol"><option value="auto">隱含波動 180D（缺值用 120 日歷史）</option><option value="hv120">歷史：近 120 日（約 6 個月）</option><option value="max">歷史：20／50 日取高</option><option value="hv20">歷史：近 20 日</option><option value="hv49">歷史：近 50 日</option></select></div>
+        <div class="field"><label for="p-x">X 軸評分</label>
+          <select id="p-x"><option value="fund">基本面選股</option><option value="tech">技術面選股</option><option value="mix">綜合（基本面 70%＋技術面 30%）</option></select></div>
       </div>
       <p class="hint">KI 觸及率與到期低於執行價機率為簡化模型估算（零漂移、連續觀察），僅供排序比較，不等於發行機構報價。</p>
     </div>
@@ -257,19 +259,19 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
 
   <section class="mapsec" aria-label="品質與波動地圖">
     <div class="toolbar" style="margin-top:26px">
-      <h2>品質 × 波動地圖</h2>
+      <h2 id="map-title">基本面 × 波動地圖</h2>
       <span class="hint" style="margin:0" id="map-count">— 個有效點位</span>
     </div>
     <div class="map-layout">
       <div class="panel map-panel">
-        <div class="axis-hint"><span>← 品質低</span><span>品質高 →</span></div>
+        <div class="axis-hint"><span id="x-lo">← 分數低</span><span id="x-hi">分數高 →</span></div>
         <div id="map" class="map-box"><div class="empty">資料載入後會顯示點位。</div></div>
         <p class="hint">點一下點位即可加入或移出下方的 FCN 組合（最多 5 檔）。金色點為已選。</p>
         <div id="peek" class="peek" hidden></div>
       </div>
       <div class="panel explain">
-        <p><b>這張圖在看什麼？</b>基本面品質 × 目前波動度，用來排出值得優先詢價的連結標的。</p>
-        <p><b>X 軸＝品質百分位</b>：品質分數在本頁所有個股中的排名，越右越好。</p>
+        <p><b>這張圖在看什麼？</b>選股評分 × 目前波動度，用來排出值得優先詢價的連結標的。</p>
+        <p><b>X 軸＝所選評分的百分位</b>：可切換「基本面選股」（萬一接到股票要不要緊）、「技術面選股」（現在進場的位階危不危險），或兩者 70／30 綜合，看在本頁所有個股中的排名，越右越好。</p>
         <p><b>Y 軸＝波動百分位</b>：所選波動基準在本頁所有個股中的排名，越上波動越高。預設用 180 天價平 Put 隱含波動（前後兩個到期日依時間內插）；沒有選擇權資料的個股（包括日股）改用近 120 日歷史波動。</p>
         <div class="quad q-tr"><b>右上｜優先詢價區</b><span>品質較佳、波動相對偏高。優先向發行機構確認實際票息，仍要搭配估值與報價判斷。</span></div>
         <div class="quad q-br"><b>右下｜好公司、波動較低</b><span>品質佳，但波動低，單獨做 FCN 的票息通常不具吸引力，適合當組合中的穩定成員。</span></div>
@@ -321,7 +323,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
       <label for="sort" class="hint" style="margin:0">排序</label>
       <select id="sort">
         <option value="fit">FCN 適配度</option>
-        <option value="quality">品質分數</option>
+        <option value="quality">X 軸分數</option>
         <option value="vol">波動（高→低）</option>
         <option value="ki">KI 觸及率（低→高）</option>
         <option value="dd">距 52 週高點</option>
@@ -338,12 +340,14 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
         <li><b>波動</b>：預設為 180 天 Put 隱含波動：取 180 天前後兩個到期日、最接近現價兩個履約價的 Put 隱含波動平均，以總變異數依時間內插到 180 天；歷史波動為近 20／50／120 個交易日對數報酬標準差 × √252；120 日約 6 個月，與 FCN 常見天期相近，是沒有隱含波動時的預設。Yahoo 沒有日股選擇權資料，日股一律用歷史波動。</li>
         <li><b>KI 觸及率（估）</b>：連續觀察障礙機率 Φ((ln KI + σ²T/2) ÷ σ√T) + Φ((ln KI − σ²T/2) ÷ σ√T) ÷ KI，假設股價無預期漲跌（零漂移），用於比較個股相對風險。</li>
         <li><b>到期低於執行價（估）</b>：Φ((ln(執行價%) + σ²T/2) ÷ σ√T)，代表可能被轉換為股票的粗略機率。</li>
-        <li><b>品質／波動百分位</b>：在本頁所有有資料個股中的相對排名（0–100），50 為中位，用來劃分四個象限。</li>
+        <li><b>X 軸分數／波動百分位</b>：在本頁所有有資料個股中的相對排名（0–100），50 為中位，用來劃分四個象限。</li>
         <li><b>組合試算</b>：以各檔歷史波動與近 50 日報酬相關係數模擬 worst-of 路徑。每月觀察一次，所有標的都站上 KO 價即提前出場；未 KO 時估算任一檔觸及 KI、以及到期依執行價轉換最差標的的機率。</li>
         <li><b>正相關配對</b>：計算主標的與同市場其他個股近 50 日報酬的相關係數，由高到低排列，並模擬兩檔 worst-of 的 KO 機率與平均 KO 月份。相關越高，越接近單檔走勢，KO 較快、KI 風險較低，但票息通常也較低。</li>
-        <li><b>日股</b>：與美股同樣由 Yahoo Finance 取得（代號加 .T），價格以日圓計，已含分割調整。ETF 沒有基本面，不計品質分數，也不放進地圖。</li>
-        <li><b>品質分數 0–100</b>：營收成長 25、營業利益率 25、自由現金流率 20、ROE 15、負債權益比 15。</li>
-        <li><b>適配度</b>：品質 ≥ 65、波動 25%–60%、RSI &lt; 75 為「優先觀察」；品質 ≥ 50 為「可考慮」；品質 &lt; 50 或波動 &gt; 65% 為「謹慎」。</li>
+        <li><b>日股</b>：與美股同樣由 Yahoo Finance 取得（代號加 .T），價格以日圓計，已含分割調整。ETF 沒有基本面，不計分數，也不放進地圖。日股基本面暫用原品質分數（營收成長 25、營業利益率 25、自由現金流率 20、ROE 15、負債權益比 15）。</li>
+        <li><b>基本面分數 0–100（美股）</b>：萬一接到股票要不要緊。獲利與現金流 40（營業利益率 20、自由現金流率 20）；成長 20（營收成長 10、預估 EPS 成長 10）；財務體質 15（ROE 7.5、淨負債／EBITDA 7.5，現金多於負債直接滿分）；安全邊際 25（PEG 或預估本益比取較佳者 15、近 4 季 EPS 優於預期比率 5、分析師目標價空間 5）。</li>
+        <li><b>技術面分數 0–100</b>：現在進場的位階危不危險。200 日均線位階 20（站上且乖離 ≤ 15%，或 KI 價低於年線，給滿分）；50 日均線 20 日斜率 10；RSI(14) 20（35–55 滿分、55–65 或 25–35 給 10、65–70 給 5、&gt; 70 或 &lt; 25 給 0）；布林 %B 10（0.1–0.5 滿分、&gt; 1 給 0）；距 52 週高點回檔 15（10%–25% 滿分、0%–3% 給 6.5、&gt; 40% 給 0）；180D IV／120 日 HV 10（≥ 1.1 滿分、&lt; 1 遞減）；財報日緩衝 10（10 天內財報給 0、財報後 1–5 天滿分、其餘 7）；放空比例 5（≤ 5% 滿分、≥ 15% 給 0）。</li>
+        <li><b>缺資料</b>：某項目沒有資料時不計入，總分依有資料的項目換算成 100（有資料的項目合計需 ≥ 40 分）。日股沒有 IV、放空比例，這兩項不計。綜合分數＝基本面 70%＋技術面 30%。</li>
+        <li><b>適配度</b>：X 軸分數 ≥ 65、波動 25%–60%、RSI &lt; 75 為「優先觀察」；分數 ≥ 50 為「可考慮」；分數 &lt; 50 或波動 &gt; 65% 為「謹慎」；分數 &lt; 35 為「不建議」。</li>
       </ul>
     </div>
     <div class="panel disclose">
@@ -377,7 +381,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
   try { const m = localStorage.getItem("fcn-radar-market"); if (m === "JP" || m === "US") state.market = m; } catch(e) {}
 
   // ---------- per-viewer params (localStorage, best effort) ----------
-  const P_KEYS = ["p-ki","p-strike","p-ko","p-tenor","p-vol","sort"];
+  const P_KEYS = ["p-ki","p-strike","p-ko","p-tenor","p-vol","p-x","sort"];
   try { const s = JSON.parse(localStorage.getItem("fcn-radar-params") || "{}"); P_KEYS.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); state.sort = $("sort").value; } catch(e) {}
   function saveParams(){ try { const o = {}; P_KEYS.forEach(k => o[k] = $(k).value); localStorage.setItem("fcn-radar-params", JSON.stringify(o)); } catch(e) {} }
   function params(){
@@ -385,7 +389,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     const st = Math.min(100, Math.max(40, +$("p-strike").value || 85)) / 100;
     const tenor = Math.min(24, Math.max(1, +$("p-tenor").value || 6));
     const ko = Math.min(120, Math.max(80, +$("p-ko").value || 100)) / 100;
-    return { ki, st, ko, tenor, T: tenor / 12, basis: $("p-vol").value };
+    return { ki, st, ko, tenor, T: tenor / 12, basis: $("p-vol").value, xmode: $("p-x").value };
   }
 
   // ---------- math ----------
@@ -403,6 +407,84 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     const d = q.debtEquity == null ? 0.5 : clamp01((1.5 - q.debtEquity)/1.2);
     return Math.round(g*25 + om*25 + f*20 + r*15 + d*15);
   }
+  // ---------- scores (each item: [name, points, max]; missing data = item skipped, total rescaled to 100) ----------
+  // piecewise-linear: pts = [[x0,y0],[x1,y1],...] sorted by x; clamps at both ends
+  function pw(x, pts){
+    if (x <= pts[0][0]) return pts[0][1];
+    for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) {
+      const [a, ya] = pts[i-1], [b, yb] = pts[i];
+      return b === a ? yb : ya + (yb - ya) * (x - a) / (b - a);
+    }
+    return pts[pts.length-1][1];
+  }
+  const num = x => typeof x === "number" && isFinite(x);
+  function total(items){
+    const have = items.filter(i => i[1] != null);
+    const max = have.reduce((s,i) => s + i[2], 0);
+    return max >= 40 ? Math.round(have.reduce((s,i) => s + i[1], 0) / max * 100) : null;
+  }
+  // US fundamentals: what happens if the investor ends up holding the stock
+  function fundItems(q){
+    const fwdG = num(q.forwardEps) && num(q.trailingEps) && q.trailingEps > 0 ? (q.forwardEps/q.trailingEps - 1)*100 : null;
+    let lev = null;
+    if (num(q.totalCash) && num(q.totalDebt) && q.totalCash >= q.totalDebt) lev = 7.5;
+    else if (num(q.totalCash) && num(q.totalDebt) && num(q.ebitda) && q.ebitda > 0) lev = pw((q.totalDebt - q.totalCash)/q.ebitda, [[1,7.5],[3,2.5],[4,0]]);
+    else if (num(q.debtEquity)) lev = pw(q.debtEquity, [[0.5,7.5],[2,0]]);
+    const peg = num(q.peg) && q.peg > 0 ? pw(q.peg, [[1,15],[1.5,12],[3,0]]) : null;
+    const fpe = num(q.forwardPe) ? (q.forwardPe <= 0 ? 0 : pw(q.forwardPe, [[15,15],[25,10],[45,3],[70,0]])) : null;
+    const val = peg == null && fpe == null ? null : Math.max(peg ?? 0, fpe ?? 0);
+    const up = num(q.target) && q.price ? (q.target/q.price - 1)*100 : null;
+    return [
+      ["營業利益率", num(q.opMargin) ? pw(q.opMargin, [[0,0],[30,20]]) : null, 20],
+      ["自由現金流率", num(q.fcfMargin) ? pw(q.fcfMargin, [[0,0],[25,20]]) : null, 20],
+      ["營收成長", num(q.revGrowth) ? pw(q.revGrowth, [[0,0],[30,10]]) : null, 10],
+      ["預估 EPS 成長", fwdG == null ? null : pw(fwdG, [[0,0],[25,10]]), 10],
+      ["ROE", num(q.roe) ? pw(q.roe, [[0,0],[25,7.5]]) : null, 7.5],
+      ["淨負債／EBITDA", lev, 7.5],
+      ["估值（PEG／預估本益比）", val, 15],
+      ["近 4 季 EPS 優於預期", num(q.epsBeats) && q.epsQuarters ? q.epsBeats/q.epsQuarters*5 : null, 5],
+      ["目標價空間", up == null ? null : pw(up, [[0,0],[20,5]]), 5],
+    ];
+  }
+  // technicals: is today a dangerous place to set the strike?
+  function techItems(q, p){
+    let ma200 = null;
+    if (num(q.ma200) && q.ma200 > 0 && q.price) {
+      const dev = q.price/q.ma200 - 1;
+      if (dev >= 0) ma200 = dev <= 0.15 || q.price*p.ki <= q.ma200 ? 20 : pw(dev, [[0.15,20],[0.4,5]]);
+      else ma200 = pw(dev, [[-0.15,0],[-0.05,8],[0,8]]);
+    }
+    const rsi = num(q.rsi) ? (q.rsi < 25 ? 0 : q.rsi < 35 ? 10 : q.rsi <= 55 ? 20 : q.rsi <= 65 ? 10 : q.rsi <= 70 ? 5 : 0) : null;
+    const b = q.pctB;
+    const pb = num(b) ? (b < 0 ? 3 : b < 0.1 ? 6 : b <= 0.5 ? 10 : b <= 1 ? pw(b, [[0.5,10],[1,2]]) : 0) : null;
+    const dd = num(q.high52) && q.high52 > 0 && q.price ? (1 - q.price/q.high52)*100 : null;
+    const ddS = dd == null ? null : dd < 3 ? 6.5 : dd < 10 ? pw(dd, [[3,8],[10,15]]) : dd <= 25 ? 15 : pw(dd, [[25,15],[40,3],[40.01,0]]);
+    const hvRef = q.hv120 || null;
+    const ivhv = num(q.iv180) && hvRef ? pw(q.iv180/hvRef, [[0.8,0],[1,6],[1.1,10]]) : null;
+    const next = daysTo(q.earningsDate), last = q.lastEarnings ? -daysTo(q.lastEarnings) : null;
+    const earn = next != null && next >= 0 && next <= 10 ? 0 : last != null && last >= 1 && last <= 5 ? 10 : (next != null || last != null) ? 7 : null;
+    return [
+      ["200 日均線位階", ma200, 20],
+      ["50 日均線斜率", num(q.ma50Slope) ? pw(q.ma50Slope, [[-3,0],[-0.5,10]]) : null, 10],
+      ["RSI(14) 甜點區", rsi, 20],
+      ["布林通道 %B", pb, 10],
+      ["距 52 週高點回檔", ddS, 15],
+      ["IV／HV 溢價比", ivhv, 10],
+      ["財報日緩衝", earn, 10],
+      ["放空比例", num(q.shortPctFloat) ? pw(q.shortPctFloat, [[5,5],[15,0]]) : null, 5],
+    ];
+  }
+  function scores(q, p){
+    if (isEtf(q)) return { fs: null, ts: null, xs: null, fItems: [], tItems: [] };
+    const fItems = mktOf(q.ticker) === "US" ? fundItems(q) : null; // Japan keeps the original quality score for now
+    const fs = fItems ? total(fItems) : quality(q);
+    const tItems = techItems(q, p), ts = total(tItems);
+    const xs = p.xmode === "tech" ? ts : p.xmode === "mix" ? (fs == null || ts == null ? (fs ?? ts) : Math.round(fs*0.7 + ts*0.3)) : fs;
+    return { fs, ts, xs, fItems: fItems || [], tItems };
+  }
+  const X_NAME = { fund: "基本面分數", tech: "技術面分數", mix: "綜合安全分" };
+  const xName = () => X_NAME[$("p-x").value] || X_NAME.fund;
+
   function daysTo(dateStr){
     if (!dateStr) return null;
     const d = new Date(dateStr + "T00:00:00+08:00");
@@ -419,7 +501,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     const pBelow = sT > 0 ? Phi((Math.log(p.st) + sT*sT/2)/sT) : 0;
     const kiSigma = sT > 0 ? -Math.log(p.ki)/sT : null;
     const etf = isEtf(q);
-    const qs = etf ? null : quality(q);
+    const sc = scores(q, p), qs = sc.xs;
     const dd = q.high52 ? (q.price/q.high52 - 1)*100 : null;
     const ed = daysTo(q.earningsDate);
     const volPct = sig*100;
@@ -440,7 +522,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     // fit score: quality matters most, vol in a useful band, penalise KI risk & earnings proximity
     const volFit = volPct < 20 ? 0.3 : volPct <= 55 ? 1 : volPct <= 70 ? 0.6 : 0.25;
     const fit = (qs == null ? 55 : qs)*0.55 + volFit*30 + (1 - pKI)*15 - (ed != null && ed >= 0 && ed <= 30 ? 4 : 0) - (q.rsi >= 75 ? 4 : 0);
-    return { useIv, sig, volPct, pKI, pBelow, kiSigma, qs, dd, ed, verdict, vc, flags, fit, kiPx: q.price*p.ki, stPx: q.price*p.st };
+    return { useIv, sig, volPct, pKI, pBelow, kiSigma, qs, sc, dd, ed, verdict, vc, flags, fit, kiPx: q.price*p.ki, stPx: q.price*p.st };
   }
 
   // ---------- formatting ----------
@@ -509,6 +591,13 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     </article>`;
   }
   function removeCtl(){ return ""; }
+  function scoreBlock(title, score, items, note){
+    if (score == null && !items.length) return "";
+    const fmt = v => (Math.round(v*10)/10).toString();
+    return `<div style="grid-column:1/-1"><span>${title}分數</span><span class="num"><b>${score == null ? "資料不足" : score + " /100"}</b></span></div>
+      ${items.length ? `<div style="grid-column:1/-1;font-size:12px;color:var(--muted);line-height:1.7">${items.map(i => `${i[0]} ${i[1] == null ? "—" : fmt(i[1])}/${i[2]}`).join("　")}${items.some(i => i[1] == null) ? "（— 為缺資料，總分依有資料的項目換算成 100）" : ""}</div>` : ""}
+      ${note ? `<div style="grid-column:1/-1;font-size:12px;color:var(--muted)">${note}</div>` : ""}`;
+  }
 
   function card(t, q, a){
     const open = state.open.has(t), conf = state.confirm === t;
@@ -526,7 +615,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
         <div class="m"><div class="k">到期低於執行價</div><div class="v">${pct(a.pBelow)}</div></div>
         <div class="m"><div class="k">KI 距離</div><div class="v">${a.kiSigma == null ? "—" : a.kiSigma.toFixed(2)}<small> σ</small></div></div>
         <div class="m"><div class="k">距 52 週高點</div><div class="v">${sgn(a.dd)}</div></div>
-        <div class="m"><div class="k">品質分數</div>${a.qs == null ? `<div class="v"><small>ETF 不適用</small></div>` : `<div class="v">${a.qs}<small> /100</small></div><div class="qbar"><i style="width:${a.qs}%"></i></div>`}</div>
+        <div class="m"><div class="k">${xName()}</div>${a.qs == null ? `<div class="v"><small>${isEtf(q) ? "ETF 不適用" : "資料不足"}</small></div>` : `<div class="v">${a.qs}<small> /100</small></div><div class="qbar"><i style="width:${a.qs}%"></i></div>`}</div>
       </div>
       ${ruler(q, a)}
       ${spark(q.closes)}
@@ -535,6 +624,8 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
         <span style="display:flex;gap:12px;align-items:center"><button class="btn sm ${state.basket.includes(t) ? "on" : "ghost"}" data-act="basket" data-t="${esc(t)}">${state.basket.includes(t) ? "已在組合 ✓" : "加入組合"}</button>${removeCtl(t, conf)}</span>
       </div>
       ${open ? `<div class="details">
+        ${scoreBlock("基本面", a.sc.fs, a.sc.fItems, mktOf(t) === "JP" ? "日股暫用原品質分數：營收成長 25、營業利益率 25、自由現金流率 20、ROE 15、負債權益比 15" : "")}
+        ${scoreBlock("技術面", a.sc.ts, a.sc.tItems, "")}
         <div><span>市值</span><span class="num">${esc(q.marketCap || "—")}</span></div>
         <div><span>營收 TTM</span><span class="num">${esc(q.revenueTtm || "—")}</span></div>
         <div><span>營收成長</span><span class="num">${sgn(q.revGrowth)}</span></div>
@@ -596,19 +687,19 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     g += `<text x="${X(2)}" y="${Y(97)}" font-size="12" fill="var(--warn)" font-weight="700">高息需注意風險</text>`;
     g += `<text x="${X(98)}" y="${Y(3)}" text-anchor="end" font-size="12" fill="var(--muted)">好公司、波動較低</text>`;
     g += `<text x="${X(2)}" y="${Y(3)}" font-size="12" fill="var(--muted)">低優先度</text>`;
-    g += `<text x="${(X(0)+X(100))/2}" y="${H-10}" text-anchor="middle" font-size="14" fill="var(--muted)">品質百分位</text>`;
+    g += `<text x="${(X(0)+X(100))/2}" y="${H-10}" text-anchor="middle" font-size="14" fill="var(--muted)">${xName()}百分位</text>`;
     g += `<text transform="translate(16 ${(Y(0)+Y(100))/2}) rotate(-90)" text-anchor="middle" font-size="14" fill="var(--muted)">波動百分位</text>`;
     // points: unselected first, selected on top
     const sorted = ready.slice().sort((a,b) => (state.basket.includes(a.t)) - (state.basket.includes(b.t)));
     sorted.forEach(r => {
       const sel = state.basket.includes(r.t), cx = X(r.qp), cy = Y(r.vp);
       const anchor = r.qp > 92 ? "end" : r.qp < 6 ? "start" : "middle";
-      g += `<g class="pt" data-t="${esc(r.t)}" tabindex="0" role="button" aria-pressed="${sel}" aria-label="${esc(disp(r.t))}：品質百分位 ${r.qp.toFixed(0)}，波動百分位 ${r.vp.toFixed(0)}">
+      g += `<g class="pt" data-t="${esc(r.t)}" tabindex="0" role="button" aria-pressed="${sel}" aria-label="${esc(disp(r.t))}：${xName()}百分位 ${r.qp.toFixed(0)}，波動百分位 ${r.vp.toFixed(0)}">
         <circle cx="${cx}" cy="${cy}" r="${sel ? 10 : 8}" fill="${sel ? "var(--gold)" : "var(--navy-2)"}" fill-opacity="${sel ? 1 : .75}" stroke="${sel ? "var(--ink)" : "var(--surface)"}" stroke-width="${sel ? 2 : 1.5}"/>
         <text x="${cx}" y="${cy-13}" text-anchor="${anchor}" font-size="12.5" font-weight="700" fill="var(--ink)" font-family="var(--f-mono)" paint-order="stroke" stroke="var(--surface)" stroke-width="3">${esc(disp(r.t))}</text>
       </g>`;
     });
-    $("map").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="品質百分位對波動百分位散佈圖">${g}</svg>`;
+    $("map").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${xName()}百分位對波動百分位散佈圖">${g}</svg>`;
     renderPeek(ready);
   }
   function renderPeek(ready){
@@ -618,7 +709,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     el.hidden = false;
     el.innerHTML = `<div class="h"><span><b class="num">${esc(disp(r.t))}</b> <span class="nm">${esc(r.q.zhName || r.q.name)} · ${QUAD_NAME[r.quad]}</span></span>
         <button class="btn sm ${sel ? "on" : "ghost"}" data-act="basket" data-t="${esc(r.t)}">${sel ? "已在組合 ✓" : "加入組合"}</button></div>
-      <div><div class="k">品質分數／百分位</div><div class="num">${r.a.qs}／${r.qp.toFixed(0)}</div></div>
+      <div><div class="k">${xName()}／百分位</div><div class="num">${r.a.qs}／${r.qp.toFixed(0)}</div></div>
       <div><div class="k">${r.a.useIv ? "180D Put IV" : "歷史波動"}／百分位</div><div class="num">${f1(r.a.volPct)}%／${r.vp.toFixed(0)}</div></div>
       <div><div class="k">單檔 KI 觸及率</div><div class="num">${pct(r.a.pKI)}</div></div>
       <div><div class="k">預估本益比</div><div class="num">${f1(r.q.forwardPe)}</div></div>
@@ -706,8 +797,8 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     const n = rows.length; let cs = 0, cn = 0;
     for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){ cs += m.C[i][j]; cn++; }
     const avgC = cs/cn;
-    const qRows = rows.filter(r => r.a.qs != null);
-    const minQ = qRows.length ? qRows.reduce((a,r) => r.a.qs < a.a.qs ? r : a) : null;
+    const qRows = rows.filter(r => r.a.sc.fs != null);
+    const minQ = qRows.length ? qRows.reduce((a,r) => r.a.sc.fs < a.a.sc.fs ? r : a) : null;
     const maxV = rows.reduce((a,r) => r.a.volPct > a.a.volPct ? r : a);
     const earn = rows.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= p.tenor*30.4);
     const notes = [];
@@ -718,7 +809,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     const tl = rows.filter(r => r.quad === "tl");
     if (tl.length) notes.push(`<li class="w">${tl.map(r => esc(disp(r.t))).join("、")} 位於「高息需注意風險」象限，會拉高組合票息，也是組合中較可能先出事的部位。</li>`);
     if (avgC >= 0.6) notes.push(`<li class="g">相關性高：估計 ${pct(m.pKO)} 的情境會在天期內 KO（3 個月內 ${pct(m.pKO3)}），適合想要快速 KO 的客戶；票息通常較低。</li>`);
-    if (minQ && minQ.a.qs < 50) notes.push(`<li class="w">最弱品質為 ${esc(disp(minQ.t))}（${minQ.a.qs} 分）。若被轉換為股票，客戶會承接最弱的這一檔。</li>`);
+    if (minQ && minQ.a.sc.fs < 50) notes.push(`<li class="w">基本面最弱為 ${esc(disp(minQ.t))}（${minQ.a.sc.fs} 分）。若被轉換為股票，客戶會承接最弱的這一檔。</li>`);
     if (earn.length) notes.push(`<li class="w">天期內有財報：${earn.map(r => `${esc(disp(r.t))}（${esc(r.q.earningsDate)}）`).join("、")}，財報前後波動可能放大。</li>`);
     const dates = new Set(rows.map(r => r.q.priceDate)); if (dates.size > 1) notes.push(`<li class="w">各檔資料日期不一致（${[...dates].join("、")}），相關係數僅供參考。</li>`);
     body.innerHTML = `
@@ -732,7 +823,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
       </div>
       <ul class="bnotes">${notes.join("")}</ul>
       <div class="bcomp"><table>
-        <thead><tr><th>標的</th><th>象限</th><th>品質</th><th>年化波動</th><th>單檔 KI 觸及率</th><th>KI 價</th><th>執行價</th><th>下次財報</th></tr></thead>
+        <thead><tr><th>標的</th><th>象限</th><th>${xName()}</th><th>年化波動</th><th>單檔 KI 觸及率</th><th>KI 價</th><th>執行價</th><th>下次財報</th></tr></thead>
         <tbody>${rows.map(r => `<tr><td class="num"><b>${esc(disp(r.t))}</b> ${esc(r.q.zhName || "")}</td><td>${r.quad ? QUAD_NAME[r.quad] : "ETF"}</td><td class="num">${r.a.qs == null ? "—" : r.a.qs}</td><td class="num">${f1(r.a.volPct)}%</td><td class="num">${pct(r.a.pKI)}</td><td class="num">${f2(r.a.kiPx)}</td><td class="num">${f2(r.a.stPx)}</td><td class="num">${esc(r.q.earningsDate || "未公布")}</td></tr>`).join("")}</tbody>
       </table></div>
       <div class="corr-wrap"><table class="corr" aria-label="相關係數矩陣">
@@ -796,7 +887,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     body.innerHTML = `
       <p class="hint" style="margin:0 0 8px">主標的 <b>${esc(disp(anchor))}</b> 單檔參考：天期內 KO ${pct(solo.pKO)}（3 個月內 ${pct(solo.pKO3)}），KI 觸及率 ${pct(solo.pKI)}，年化波動 ${f1(A.a.volPct)}%。</p>
       <div class="pair-wrap"><table class="pair">
-        <thead><tr><th>配對標的</th><th>相關係數</th><th>年化波動</th><th>品質</th><th>兩檔 KO（估）</th><th>3 個月內 KO</th><th>平均 KO 月</th><th>兩檔 KI 觸及率</th><th></th></tr></thead>
+        <thead><tr><th>配對標的</th><th>相關係數</th><th>年化波動</th><th>${xName()}</th><th>兩檔 KO（估）</th><th>3 個月內 KO</th><th>平均 KO 月</th><th>兩檔 KI 觸及率</th><th></th></tr></thead>
         <tbody>${rowsHtml}</tbody></table></div>
       <p class="hint">列出與主標的近 50 日報酬相關係數最高的 ${cands.length} 檔（同市場、僅正相關）。KO／KI 為兩檔 worst-of 的蒙地卡羅估算（每月觀察、KO ${(p.ko*100).toFixed(0)}%、KI ${(p.ki*100).toFixed(0)}%、${p.tenor} 個月）。配對越正相關、波動越接近，越容易一起站上 KO 價而提前出場；但票息通常也較低。</p>`;
   }
@@ -806,6 +897,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     const p = params(), mk = state.market, JP = mk === "JP";
     document.querySelectorAll(".mkt button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.mkt === mk)));
     $("m-sub").textContent = JP ? "日股品質 × 市場波動觀察（東證）" : "美股品質 × 市場波動觀察";
+    $("map-title").textContent = xName().replace("分數", "").replace("綜合安全分", "綜合安全") + " × 波動地圖";
     const all = [...state.watch.keys()];
     const tickers = all.filter(t => mktOf(t) === mk);
     $("m-count").textContent = state.dbReady ? tickers.length : "—";
@@ -831,7 +923,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
     // summary
     const tops = ready.filter(r => r.a.verdict === "優先觀察").sort((x,y) => y.a.fit - x.a.fit);
     $("s-top").textContent = ready.length ? tops.length + " 檔" : "—";
-    $("s-top-s").textContent = tops.length ? tops.slice(0,8).map(r => disp(r.t)).join("、") + (tops.length > 8 ? " 等" : "") : "品質與波動兼具";
+    $("s-top-s").textContent = tops.length ? tops.slice(0,8).map(r => disp(r.t)).join("、") + (tops.length > 8 ? " 等" : "") : "分數與波動兼具";
     $("s-vol").textContent = ready.length ? (ready.reduce((s,r) => s + r.a.volPct, 0)/ready.length).toFixed(1) + "%" : "—";
     const inTenor = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= p.tenor*30.4);
     const in30 = ready.filter(r => r.a.ed != null && r.a.ed >= 0 && r.a.ed <= 30);
@@ -873,7 +965,7 @@ mark{background:var(--gold-soft);color:inherit;border-radius:2px}
   }
 
   // ---------- events ----------
-  ["p-ki","p-strike","p-ko","p-tenor","p-vol"].forEach(id => $(id).addEventListener("input", () => { saveParams(); render(); }));
+  ["p-ki","p-strike","p-ko","p-tenor","p-vol","p-x"].forEach(id => $(id).addEventListener("input", () => { saveParams(); render(); }));
   function setMarket(m){
     if (m === state.market) return;
     state.market = m; state.peek = null; state.confirm = null;
