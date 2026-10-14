@@ -10,7 +10,7 @@
 若本次抓不到、但舊資料存在，保留舊資料並標記 stale。
 
 環境變數 MARKETS=US 或 MARKETS=JP 時只更新該市場，其餘沿用上一次資料
-（手動測試用；GitHub Actions 每天台北 08:00 兩個市場一起更新）。
+（手動測試用；GitHub Actions 每天台北 07:40 兩個市場一起更新）。
 今天盤中（交易所尚未收盤）的日線會被略過，只採用已收盤的交易日。
 """
 from __future__ import annotations
