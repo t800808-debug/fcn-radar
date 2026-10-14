@@ -61,6 +61,7 @@ LLY
 BLK
 CRCL
 CLF
+UNH
 
 # ===== 日股（東證）=====
 # ETF
