@@ -45,11 +45,17 @@ jobs:
         run: |
           git config user.name "fcn-radar-bot"
           git config user.email "fcn-radar-bot@users.noreply.github.com"
+          # 執行期間分支可能已有新提交（例如另一次更新、修改 tickers.txt）：
+          # 先保存本次資料，再移到分支最新版本上覆寫，避免 rebase 衝突
+          BRANCH="${GITHUB_REF_NAME}"
+          mkdir -p "$RUNNER_TEMP/out" && cp data/quotes.json data/meta.json "$RUNNER_TEMP/out/"
+          git fetch origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+          cp "$RUNNER_TEMP/out/quotes.json" "$RUNNER_TEMP/out/meta.json" data/
           git add data/
           if git diff --cached --quiet; then
             echo "資料沒有變化"
           else
             git commit -m "資料更新 $(TZ=Asia/Taipei date '+%Y-%m-%d %H:%M')"
-            git pull --rebase origin main
-            git push
+            git push origin "HEAD:$BRANCH"
           fi
