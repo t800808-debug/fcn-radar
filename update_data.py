@@ -208,17 +208,27 @@ def fetch(t: str, label: str | None = None) -> dict:
     now_local = dt.datetime.now(tz)
     if len(hist) and hist.index[-1].date() == now_local.date() and now_local.time() < close_at:
         hist = hist.iloc[:-1]  # market still open: keep only completed sessions
-    closes_all = [float(x) for x in hist["Close"].dropna().tolist()]
-    if len(closes_all) < 25:
-        raise ValueError("上市時間太短，歷史資料不足")
-    price = closes_all[-1]
-    closes = closes_all[-50:]
-    last_date = hist.index[-1].date().isoformat()
-
     try:
         info = tk.info or {}
     except Exception:
         info = {}
+    closes_all = [float(x) for x in hist["Close"].dropna().tolist()]
+    last_day = hist.index[-1].date() if len(hist) else None
+    # Yahoo sometimes publishes the daily bar hours after the close (US bars can be missing until
+    # ~21:00-23:00 ET); if the quote shows a completed session newer than the last bar, use its price.
+    q_time, q_price = info.get("regularMarketTime"), r(info.get("regularMarketPrice"))
+    if isinstance(q_time, (int, float)) and q_price:
+        q_at = dt.datetime.fromtimestamp(q_time, tz)
+        session_done = now_local.date() > q_at.date() or now_local.time() >= close_at
+        if last_day and q_at.date() > last_day and q_at.date() <= now_local.date() and session_done and q_at.weekday() < 5:
+            closes_all.append(q_price)
+            last_day = q_at.date()
+    if len(closes_all) < 25:
+        raise ValueError("上市時間太短，歷史資料不足")
+    price = closes_all[-1]
+    closes = closes_all[-50:]
+    last_date = last_day.isoformat()
+
     rev = info.get("totalRevenue")
     fcf = info.get("freeCashflow")
     de = info.get("debtToEquity")  # Yahoo reports this in percent (e.g. 17.2)
