@@ -197,6 +197,45 @@ def earnings_date(tk: yf.Ticker) -> str | None:
     return None
 
 
+def eps_beats(tk: yf.Ticker) -> tuple[int | None, int | None]:
+    """(quarters where reported EPS >= estimate, quarters with data) over the last 4 quarters."""
+    try:
+        h = tk.earnings_history
+        h = h.dropna(subset=["epsActual", "epsEstimate"]).sort_index().tail(4)
+    except Exception:
+        return None, None
+    if h.empty:
+        return None, None
+    return int((h["epsActual"] >= h["epsEstimate"]).sum()), len(h)
+
+
+def last_earnings(info: dict, tz) -> str | None:
+    """Most recent earnings report date if Yahoo's earningsTimestamp is in the past."""
+    ts = info.get("earningsTimestamp")
+    if not isinstance(ts, (int, float)):
+        return None
+    d = dt.datetime.fromtimestamp(ts, tz)
+    return d.date().isoformat() if d <= dt.datetime.now(tz) else None
+
+
+def bollinger_pct_b(closes: list[float], n: int = 20) -> float | None:
+    if len(closes) < n:
+        return None
+    w = closes[-n:]
+    m = sum(w) / n
+    sd = math.sqrt(sum((x - m) ** 2 for x in w) / n)
+    return round((w[-1] - (m - 2 * sd)) / (4 * sd), 2) if sd else None
+
+
+def ma_slope(closes: list[float], n: int = 50, lag: int = 20) -> float | None:
+    """% change of the n-day moving average over the last `lag` trading days."""
+    if len(closes) < n + lag:
+        return None
+    now = sum(closes[-n:]) / n
+    before = sum(closes[-n - lag:-lag]) / n
+    return round((now / before - 1) * 100, 2)
+
+
 def fetch(t: str, label: str | None = None) -> dict:
     tk = yf.Ticker(t)
     mk = market_of(t)
@@ -260,7 +299,17 @@ def fetch(t: str, label: str | None = None) -> dict:
         "fcfMargin": round(fcf / rev * 100, 2) if fcf and rev else None,
         "roe": pct(info.get("returnOnEquity")),
         "debtEquity": round(de / 100, 2) if isinstance(de, (int, float)) else None,
+        "forwardEps": r(info.get("forwardEps")),
+        "trailingEps": r(info.get("trailingEps")),
+        "peg": r(info.get("pegRatio") or info.get("trailingPegRatio")),
+        "totalCash": r(info.get("totalCash"), 0),
+        "totalDebt": r(info.get("totalDebt"), 0),
+        "ebitda": r(info.get("ebitda"), 0),
+        "shortPctFloat": pct(info.get("shortPercentOfFloat"), 1),
+        "lastEarnings": last_earnings(info, tz),
         "rsi": rsi14(closes_all),
+        "pctB": bollinger_pct_b(closes_all),
+        "ma50Slope": ma_slope(closes_all),
         "ma50": r(sum(closes_all[-50:]) / min(50, len(closes_all))),
         "ma200": r(sum(closes_all[-200:]) / min(200, len(closes_all))),
         "closes": [r(x) for x in closes],
@@ -276,6 +325,7 @@ def fetch(t: str, label: str | None = None) -> dict:
         "updatedAt": dt.datetime.now(TPE).isoformat(timespec="seconds"),
         "status": "ok",
     }
+    q["epsBeats"], q["epsQuarters"] = eps_beats(tk) if not is_etf else (None, None)
     if mk == "JP":
         q["code"] = t[:-2]
     if label:
