@@ -55,6 +55,7 @@ BILI
 GEV
 VST
 CEG
+BE
 
 # 醫藥／金融／原物料
 LLY
