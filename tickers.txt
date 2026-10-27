@@ -51,7 +51,9 @@ AAPL
 TSLA
 RBLX
 BILI
-SPCX
+
+# 航太
+SPCX # SpaceX
 
 # 電力／能源
 GEV
