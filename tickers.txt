@@ -41,6 +41,7 @@ PLTR
 CRWD
 ZS
 OKTA
+NBIS
 
 # 平台／網路
 GOOGL
@@ -50,6 +51,7 @@ AAPL
 TSLA
 RBLX
 BILI
+SPCX
 
 # 電力／能源
 GEV
