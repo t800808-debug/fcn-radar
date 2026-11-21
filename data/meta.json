@@ -1,11 +1,9 @@
 {
-  "updatedAt": "2026-11-20T10:36:54+08:00",
-  "updatedAtJP": "2026-11-20T10:36:54+08:00",
-  "marketDate": "2026-11-19",
-  "marketDateJP": "2026-11-19",
+  "updatedAt": "2026-11-21T10:50:33+08:00",
+  "updatedAtJP": "2026-11-21T10:50:33+08:00",
+  "marketDate": "2026-11-20",
+  "marketDateJP": "2026-11-20",
   "source": "Yahoo Finance (yfinance)",
-  "ok": 130,
-  "failed": [
-    "SNDK: 上市時間太短，歷史資料不足"
-  ]
+  "ok": 131,
+  "failed": []
 }
